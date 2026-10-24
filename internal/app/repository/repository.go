@@ -20,9 +20,9 @@ import (
 const (
 	// codeUniqueViolation - код ошибки postgres «нарушен уникальный индекс»
 	codeUniqueViolation = "23505"
-	// cardsContentUniqueIdx - у карт пользователя содержимое не повторяется, см. migrations/*_init.sql
+	// cardsContentUniqueIdx - у карт пользователя содержимое не повторяется, см. migrations/*_cards.sql
 	cardsContentUniqueIdx = "cards_user_id_content_unique_idx"
-	// usersLoginUniqueIdx - логины не повторяются, см. migrations/*_init.sql
+	// usersLoginUniqueIdx - логины не повторяются, см. migrations/*_users.sql
 	usersLoginUniqueIdx = "users_login_unique_idx"
 )
 

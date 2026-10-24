@@ -16,6 +16,6 @@ FROM gcr.io/distroless/static-debian12:nonroot
 
 COPY --from=build /out/valet /valet
 
-EXPOSE 8000
+EXPOSE 8001
 
 ENTRYPOINT ["/valet"]

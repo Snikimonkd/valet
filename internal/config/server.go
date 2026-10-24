@@ -8,8 +8,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-// addr - только loopback: на проде запросы приходят через Caddy на том же сервере, напрямую порт недоступен
-const addr string = `127.0.0.1:8000`
+// addr - только loopback: на проде запросы приходят через Caddy на том же сервере, напрямую порт недоступен.
+const addr string = `127.0.0.1:8001`
 
 // NewServer - собирает http-сервер вокруг handler
 func NewServer(handler http.Handler) *http.Server {

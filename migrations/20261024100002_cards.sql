@@ -1,30 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
--- Внешних ключей нет: связи между таблицами держит код, каждый запрос к карте ограничен user_id.
-
--- пользователи. id - UUID версии 7, его генерирует приложение при регистрации
-CREATE TABLE users (
-    id uuid PRIMARY KEY,
-    -- в нижнем регистре: вход без учёта регистра
-    login text NOT NULL,
-    -- bcrypt-хеш пароля
-    password text NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE UNIQUE INDEX users_login_unique_idx ON users(login);
-
--- сессии: токен из куки входа
-CREATE TABLE sessions (
-    token text PRIMARY KEY,
-    user_id uuid NOT NULL,
-    created_at timestamptz NOT NULL,
-    expires_at timestamptz NOT NULL
-);
-
-CREATE INDEX sessions_user_id_idx ON sessions(user_id);
-
--- скидочные карты
+-- скидочные карты. Каждый запрос к карте ограничен user_id: чужую карту не прочитать
 CREATE TABLE cards (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id uuid NOT NULL,
@@ -51,6 +27,4 @@ CREATE UNIQUE INDEX cards_user_id_content_unique_idx ON cards(user_id, content);
 -- +goose Down
 -- +goose StatementBegin
 DROP TABLE cards;
-DROP TABLE sessions;
-DROP TABLE users;
 -- +goose StatementEnd

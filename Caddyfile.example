@@ -1,6 +1,7 @@
 # Caddy на VPS перед valet: сам выпускает и продлевает TLS-сертификат для домена.
-# Положить в /etc/caddy/Caddyfile, заменив домен, и перезапустить caddy
+# На сервере уже есть Caddyfile для quizon: этот блок дописывается рядом, а не вместо него.
+# Заменить домен и перезагрузить caddy: sudo systemctl reload caddy
 valet.example.com {
 	encode zstd gzip
-	reverse_proxy 127.0.0.1:8000
+	reverse_proxy 127.0.0.1:8001
 }
