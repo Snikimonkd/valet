@@ -20,11 +20,11 @@
         {{- if .Error}} aria-invalid="true" aria-describedby="f-login-err"{{end}}>
     </div>
     {{with .Error}}<p class="notice notice-error" id="f-login-err" role="alert"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>{{.}}</p>{{end}}
-    <div class="form-actions form-actions-stack">
+    <div class="form-actions">
       <button class="btn btn-primary" type="submit">Войти</button>
-      <a class="btn btn-secondary" href="/register">Зарегистрироваться</a>
     </div>
   </form>
+  <p class="auth-switch">Нет аккаунта? <a href="/register">Зарегистрироваться</a></p>
 </main>
 {{end}}
 {{end}}

@@ -4,7 +4,6 @@
 .idea
 .vscode
 bin
-design
 pgdata
 *.out
 *.out.tmp

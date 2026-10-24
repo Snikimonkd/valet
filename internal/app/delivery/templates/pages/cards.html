@@ -3,9 +3,19 @@
 <header class="bar">
   <a class="brand" href="/" aria-label="valet, все карты">{{template "logo"}}</a>
   <h1 class="runhead">Колода</h1>
-  <form method="post" action="/logout">
-    <button class="bar-action" type="submit" data-online-only>Выйти</button>
-  </form>
+  <div class="bar-end">
+    {{/* тумблер темы: включён - тёмная. Состояние и переключение - app.js и theme.js */}}
+    <button class="theme-toggle" type="button" role="switch" aria-checked="false" aria-label="Тёмная тема" data-theme-toggle>
+      <span class="theme-toggle-track" aria-hidden="true">
+        <svg class="icon"><use href="#i-sun"/></svg>
+        <svg class="icon"><use href="#i-moon"/></svg>
+        <span class="theme-toggle-knob"></span>
+      </span>
+    </button>
+    <form method="post" action="/logout">
+      <button class="bar-action" type="submit" data-online-only>Выйти</button>
+    </form>
+  </div>
 </header>
 <div class="rule-oxford"></div>
 {{template "banners"}}
@@ -24,7 +34,8 @@
       <a class="deck-card" href="{{.URL}}" data-suit="{{.Suit}}">
         {{template "pip" .}}
         <span class="deck-card-name">{{.Name}}</span>
-        <span class="deck-card-code">{{.Code}}</span>
+        {{/* заметка, а не содержимое кода: «PIN 4417» в колоде полезнее, чем хэш из QR */}}
+        {{with .Note}}<span class="deck-card-note">{{.}}</span>{{end}}
         {{template "pip_end" .}}
       </a>
     </li>

@@ -260,15 +260,19 @@ func TestRegisterPage(t *testing.T) {
 	expectSession(uc)
 	wb := newTestDelivery(t, uc)
 
-	// на входе есть кнопка регистрации
+	// на входе под кнопкой - строка со ссылкой на регистрацию, и обратно
 	rec := do(t, wb, http.MethodGet, "/login", nil, false)
-	if !strings.Contains(rec.Body.String(), `<a class="btn btn-secondary" href="/register">Зарегистрироваться</a>`) {
-		t.Error("login page has no register button")
+	toRegister := `<p class="auth-switch">Нет аккаунта? <a href="/register">Зарегистрироваться</a></p>`
+	if !strings.Contains(rec.Body.String(), toRegister) {
+		t.Error("login page has no link to registration")
 	}
 
 	rec = do(t, wb, http.MethodGet, "/register", nil, false)
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `action="/register"`) {
 		t.Errorf("register page: status = %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), `<p class="auth-switch">Уже есть аккаунт? <a href="/login">Войти</a></p>`) {
+		t.Error("register page has no link to login")
 	}
 
 	// уже вошедшему регистрация не нужна
@@ -305,8 +309,10 @@ func TestCardsPage(t *testing.T) {
 
 	uc := mockUsecase(t)
 	expectSession(uc)
+	withNote := testCard(1, "Пятёрочка")
+	withNote.Note = "PIN 4417"
 	uc.EXPECT().ListCards(gomock.Any(), testUserID).
-		Return([]model.Cards{testCard(1, "Пятёрочка"), testCard(2, "<script>Лента</script>")}, nil)
+		Return([]model.Cards{withNote, testCard(2, "<script>Лента</script>")}, nil)
 	wb := newTestDelivery(t, uc)
 
 	rec := do(t, wb, http.MethodGet, "/", nil, true)
@@ -319,8 +325,8 @@ func TestCardsPage(t *testing.T) {
 		"Пятёрочка",
 		// название экранируется: скрипт из названия карты не выполнится
 		"&lt;script&gt;Лента&lt;/script&gt;",
-		// номер группами по четыре, как на пластике
-		"2775 0123 4567 8",
+		// во второй строке - заметка, а не содержимое кода
+		`<span class="deck-card-note">PIN 4417</span>`,
 		// масть рисунком из спрайта, а не символом
 		`href="#suit-`,
 		// индексы с обеих сторон карты
@@ -332,16 +338,29 @@ func TestCardsPage(t *testing.T) {
 			t.Errorf("body has no %q", want)
 		}
 	}
+	// содержимое кода в колоде не показываем, и у карты без заметки вторая строка пустая
+	if strings.Contains(body, "2775") || strings.Count(body, `class="deck-card-note"`) != 1 {
+		t.Error("deck must show notes, not qr content")
+	}
 	if strings.Contains(body, "<script>Лента") {
 		t.Error("card name is not escaped")
+	}
+	// тема ставится до первой отрисовки: theme.js в <head> без defer и раньше стилей
+	themeJS := strings.Index(body, `<script src="/static/theme.js?v=`)
+	if themeJS < 0 || themeJS > strings.Index(body, `/static/app.css?v=`) {
+		t.Error("theme.js must be loaded in head before app.css")
 	}
 	if got := rec.Header().Get("Content-Security-Policy"); !strings.Contains(got, "default-src 'self'") {
 		t.Errorf("Content-Security-Policy = %q", got)
 	}
 	// выход - в колонтитуле, а не внизу под колодой
-	if !strings.Contains(body, `<form method="post" action="/logout">
-    <button class="bar-action" type="submit" data-online-only>Выйти</button>`) {
+	if !strings.Contains(body, `<button class="bar-action" type="submit" data-online-only>Выйти</button>`) {
 		t.Error("cards page has no logout button in the header")
+	}
+	// тумблер темы - там же, в колонтитуле, перед «Выйти»
+	toggle := strings.Index(body, `role="switch" aria-checked="false" aria-label="Тёмная тема" data-theme-toggle`)
+	if toggle < 0 || toggle > strings.Index(body, `action="/logout"`) {
+		t.Error("cards page has no theme toggle before logout")
 	}
 	// добавление без сети тоже недоступно: формы нет в офлайн-кэше
 	if !strings.Contains(body, `href="/cards/new" data-online-only>Добавить карту</a>`) {
