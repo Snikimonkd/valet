@@ -1,0 +1,48 @@
+{{/* Рисунки, на которые ссылаются <use href="#...">: масти и иконки интерфейса */}}
+{{define "sprite"}}
+<svg class="visually-hidden" aria-hidden="true" focusable="false">
+  <!-- Масти: рисованные, а не символы ♠♥♦♣ — в поставке шрифтов их нет,
+       а системный запасной шрифт на iOS может подставить эмодзи. -->
+  <symbol id="suit-spade" viewBox="0 0 100 100"><path d="M50,4 C62,22 94,38 94,61 C94,76 83,86 70,86 C62,86 56,82 53,77 C54,85 58,91 66,96 L34,96 C42,91 46,85 47,77 C44,82 38,86 30,86 C17,86 6,76 6,61 C6,38 38,22 50,4 Z"/></symbol>
+  <symbol id="suit-heart" viewBox="0 0 100 100"><path d="M50,90 C22,66 4,50 4,31 C4,16 15,6 29,6 C38,6 46,11 50,20 C54,11 62,6 71,6 C85,6 96,16 96,31 C96,50 78,66 50,90 Z"/></symbol>
+  <symbol id="suit-diamond" viewBox="0 0 100 100"><path d="M50,4 C60,22 72,38 86,50 C72,62 60,78 50,96 C40,78 28,62 14,50 C28,38 40,22 50,4 Z"/></symbol>
+  <symbol id="suit-club" viewBox="0 0 100 100"><circle cx="50" cy="28" r="20"/><circle cx="27" cy="58" r="20"/><circle cx="73" cy="58" r="20"/><circle cx="50" cy="52" r="12"/><path d="M46,56 C46,76 41,88 32,96 L68,96 C59,88 54,76 54,56 Z"/></symbol>
+  <!-- Иконки: штрих 1.6, цвет текущей краски -->
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.5 5.5 8 12l6.5 6.5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5 5"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3.5 8.5A1.5 1.5 0 0 1 5 7h2.6l1.5-2.2h5.8L16.4 7H19a1.5 1.5 0 0 1 1.5 1.5v9.5A1.5 1.5 0 0 1 19 19.5H5A1.5 1.5 0 0 1 3.5 18z"/><circle cx="12" cy="13" r="3.6"/></symbol>
+  <symbol id="i-screenshot" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2.2"/><rect x="9" y="7" width="6" height="6" rx=".6"/><path d="M10.5 18.2h3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5.5M12 16.4v.1"/></symbol>
+  <symbol id="i-offline" viewBox="0 0 24 24"><path d="M4.5 10.5a11 11 0 0 1 4-2.4M19.5 10.5a11 11 0 0 0-5-2.7M7.5 14a6.5 6.5 0 0 1 3-1.6M16.5 14l-.6-.4M12 18.5h.01M4 4l16 16"/></symbol>
+</svg>
+{{end}}
+
+{{/* Знак valet: кошелёк с вырезанной V и застёжкой-пикой. Цвет - текущая краска, в тёмной теме знак светлый */}}
+{{define "logo"}}
+<svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+  <defs>
+    <mask id="logo-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+      <rect x="4" y="13" width="50" height="40" rx="9" fill="#fff"/>
+      <rect x="37" y="25" width="24" height="16" rx="6" fill="#000" stroke="#000" stroke-width="3.2"/>
+      <rect x="37" y="25" width="24" height="16" rx="6" fill="#fff"/>
+      <path d="M8 22 16.64 22 16.64 23.44 14.72 23.44 21.94 39.56 28.64 23.44 27.2 23.44 27.2 22 32.48 22 32.48 23.44 30.56 23.44 21.2 46 20 46 9.92 23.44 8 23.44Z" fill="#000"/>
+      <path d="M8 1.5C8 1.5 14.5 6 14.5 9.6C14.5 11.6 13 12.9 11.3 12.9C10.2 12.9 9.3 12.4 8.7 11.6C8.8 13 9.4 14 10.6 14.6L5.4 14.6C6.6 14 7.2 13 7.3 11.6C6.7 12.4 5.8 12.9 4.7 12.9C3 12.9 1.5 11.6 1.5 9.6C1.5 6 8 1.5 8 1.5Z" transform="translate(45.1 28.4) scale(.6)" fill="#000"/>
+    </mask>
+  </defs>
+  <rect width="64" height="64" fill="currentColor" mask="url(#logo-mask)"/>
+</svg>
+{{end}}
+
+{{/* Узор рубашки бледной полосой над колонтитулом */}}
+{{define "rubashka"}}<div class="rubashka" aria-hidden="true"></div>{{end}}
+
+{{/* Баннеры под линейкой, их показывает app.js: страница пришла из офлайн-кэша без сети или после конца сессии */}}
+{{define "banners"}}
+<p class="notice notice-offline" role="status" data-offline-banner hidden><svg class="icon" aria-hidden="true"><use href="#i-offline"/></svg>Нет сети — показываю сохранённые карты, только просмотр</p>
+<p class="notice notice-offline" role="status" data-relogin-banner hidden><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg><span>Сессия закончилась — это сохранённые карты. <a href="/login">Войти</a></span></p>
+{{end}}
+
+{{/* Угловой индекс карты: буква магазина и масть столбиком. Ожидает delivery.cardView */}}
+{{define "pip"}}<span class="pip" aria-hidden="true"><span class="pip-letter">{{.Index}}</span><svg class="pip-suit"><use href="#suit-{{.Suit}}"/></svg></span>{{end}}
+{{define "pip_bottom"}}<span class="pip pip-bottom" aria-hidden="true"><span class="pip-letter">{{.Index}}</span><svg class="pip-suit"><use href="#suit-{{.Suit}}"/></svg></span>{{end}}

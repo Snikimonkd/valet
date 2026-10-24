@@ -1,0 +1,24 @@
+{{define "content"}}
+{{template "rubashka"}}
+{{with .Page}}
+<header class="bar">
+  <a class="bar-back" href="/cards/{{.ID}}"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>Назад</a>
+  <h1 class="runhead">Удаление</h1>
+  <span></span>
+</header>
+<div class="rule-oxford"></div>
+{{/* подтверждение - отдельная страница в виде нижнего листа: работает и без js */}}
+<main class="confirm">
+  <section class="sheet" aria-labelledby="delete-title">
+    <h2 class="sheet-title" id="delete-title">Удалить «{{.Name}}»?</h2>
+    <p class="sheet-text">Карта пропадёт с этого и всех остальных телефонов. Вернуть её можно, только добавив заново.</p>
+    <div class="sheet-actions">
+      <a class="btn btn-secondary" href="/cards/{{.ID}}">Оставить</a>
+      <form method="post" action="/cards/{{.ID}}/delete">
+        <button class="btn btn-danger" type="submit">Удалить</button>
+      </form>
+    </div>
+  </section>
+</main>
+{{end}}
+{{end}}

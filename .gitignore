@@ -1,0 +1,12 @@
+/bin
+.DS_Store
+/.idea
+/.vscode
+pgdata
+
+*.out.tmp
+*.out
+cover.html
+
+# локальные настройки Claude Code
+.claude/

@@ -1,0 +1,5 @@
+*_mock.go -diff linguist-generated
+go.sum -diff
+internal/generated/** -diff linguist-generated
+internal/app/delivery/static/htmx.min.js -diff linguist-vendored
+*.woff2 binary

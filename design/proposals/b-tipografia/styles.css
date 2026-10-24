@@ -1,0 +1,1202 @@
+/* valet, вариант Б «Типография»
+   Две краски (синька и бордо) на слоновой бумаге.
+   Разделы: 1. токены  2. база  3. компоненты приложения
+            4. только для витрины (рамка телефона, статус-бар, страница-образец) */
+
+/* ==========================================================================
+   1. Токены
+   ========================================================================== */
+
+/* Не зависят от темы */
+:root {
+  --font-display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --font-ui: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Классическая типографская шкала (Брингхерст): 12 14 16 18 24 36 48 */
+  --fs-caption: 0.75rem;   /* 12 */
+  --fs-small: 0.875rem;    /* 14 */
+  --fs-body: 1rem;         /* 16 */
+  --fs-lead: 1.125rem;     /* 18 */
+  --fs-name: 1.5rem;       /* 24, название карты в колоде */
+  --fs-title: 2.25rem;     /* 36, заголовки, имя на экране QR */
+  --fs-display: 3rem;      /* 48, словесный знак на входе */
+  --fs-pip: 1.375rem;      /* 22, буква углового индекса */
+
+  --lh-tight: 1.15;
+  --lh-text: 1.5;
+  --track-caps: 0.14em;    /* разрядка капители в колонтитуле */
+
+  /* Отступы: шаг 4 */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-12: 48px;
+  --margin: 20px;          /* поле полосы */
+
+  /* Скругления: у каждого уровня своё */
+  --r-control: 4px;        /* кнопки и поля: печатная форма */
+  --r-card: 14px;          /* карты колоды: угол игральной карты */
+  --r-sheet: 20px;         /* нижний лист подтверждения */
+
+  --tap: 44px;             /* минимальная зона нажатия */
+  --strip: 68px;           /* видимая полоса карты в колоде */
+  --card-h: 124px;         /* полная высота карты; разница уходит под следующую */
+}
+
+/* Светлая тема: печать синькой и бордо по слоновой бумаге */
+:root,
+.theme-light {
+  color-scheme: light;
+  --paper: #F3EDDF;        /* бумага: фон экранов */
+  --stock: #FBF8F1;        /* картон: карты, поля, листы */
+  --ink: #1D2B45;          /* синька: текст, масти ♠ ♣ */
+  --ink-2: #55617A;        /* разбелённая синька: вторичный текст (5.3:1 на бумаге) */
+  --red: #7B2333;          /* бордо: масти ♥ ♦, ошибки, удаление (8.4:1) */
+  --red-wash: #F1E2DC;     /* подложка плашек бордо */
+  --rule: #D6CFBF;         /* волосяная линейка, декоративная */
+  --line: #7E8597;         /* граница полей ввода (3.2:1, WCAG 1.4.11) */
+  --card-line: rgba(29, 43, 69, 0.18);
+  --on-ink: #F3EDDF;       /* текст на синьке */
+  --on-ink-2: rgba(243, 237, 223, 0.78);
+  --on-red: #FBF8F1;
+  --scrim: rgba(29, 43, 69, 0.42);
+  --shadow-card: 0 -3px 8px -4px rgba(29, 43, 69, 0.28), 0 1px 1px rgba(29, 43, 69, 0.06);
+  --shadow-lift: 0 -8px 16px -8px rgba(29, 43, 69, 0.38);
+  --shadow-sheet: 0 -12px 32px -12px rgba(29, 43, 69, 0.35);
+  /* только витрина */
+  --desk: #E6DECC;
+  --frame-edge: rgba(29, 43, 69, 0.22);
+}
+
+/* Тёмная тема: выворотка, светлая краска по синему картону */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --paper: #141C2E;
+    --stock: #1B2539;
+    --ink: #EEE7D7;
+    --ink-2: #A3AABA;
+    --red: #D48A95;
+    --red-wash: #2A2033;
+    --rule: #2E3850;
+    --line: #6E7891;
+    --card-line: rgba(238, 231, 215, 0.14);
+    --on-ink: #141C2E;
+    --on-ink-2: rgba(20, 28, 46, 0.75);
+    --on-red: #141C2E;
+    --scrim: rgba(5, 8, 15, 0.6);
+    --shadow-card: 0 -3px 10px -4px rgba(0, 0, 0, 0.6);
+    --shadow-lift: 0 -8px 18px -8px rgba(0, 0, 0, 0.7);
+    --shadow-sheet: 0 -12px 32px -12px rgba(0, 0, 0, 0.7);
+    --desk: #0C1220;
+    --frame-edge: rgba(238, 231, 215, 0.16);
+  }
+}
+
+/* Те же значения классом: для витрины, чтобы показать обе темы рядом.
+   В приложении этот блок не нужен. */
+.theme-dark {
+  color-scheme: dark;
+  --paper: #141C2E;
+  --stock: #1B2539;
+  --ink: #EEE7D7;
+  --ink-2: #A3AABA;
+  --red: #D48A95;
+  --red-wash: #2A2033;
+  --rule: #2E3850;
+  --line: #6E7891;
+  --card-line: rgba(238, 231, 215, 0.14);
+  --on-ink: #141C2E;
+  --on-ink-2: rgba(20, 28, 46, 0.75);
+  --on-red: #141C2E;
+  --scrim: rgba(5, 8, 15, 0.6);
+  --shadow-card: 0 -3px 10px -4px rgba(0, 0, 0, 0.6);
+  --shadow-lift: 0 -8px 18px -8px rgba(0, 0, 0, 0.7);
+  --shadow-sheet: 0 -12px 32px -12px rgba(0, 0, 0, 0.7);
+  --frame-edge: rgba(0, 0, 0, 0.45);
+}
+
+/* ==========================================================================
+   2. База
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 var(--fs-body) / var(--lh-text) var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.icon {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+}
+
+/* ==========================================================================
+   3. Компоненты приложения
+   ========================================================================== */
+
+/* Экран: в приложении это body > main */
+.screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* Колонтитул: назад слева, капитель по центру, колонцифра справа */
+.bar {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 var(--s-2);
+}
+
+.bar > :last-child {
+  justify-self: end;
+}
+
+.bar-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: var(--tap);
+  padding: 0 var(--s-3) 0 var(--s-1);
+  border-radius: var(--r-control);
+  color: var(--ink);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.bar-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--s-3);
+  border-radius: var(--r-control);
+  color: var(--ink);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--s-3);
+}
+
+.brand .logo-mark {
+  width: 34px;
+  height: 34px;
+}
+
+/* Капитель. В поставке Cormorant нет smcp, поэтому прописные
+   кеглем меньше и с разрядкой, как делали наборщики. */
+.runhead {
+  font-family: var(--font-display);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Колонцифра: старостильные цифры Cormorant (вариант по умолчанию) */
+.folio {
+  padding-right: var(--s-3);
+  color: var(--ink-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-lead);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Оксфордская линейка: толстая и тонкая, один раз на экран */
+.rule-oxford {
+  flex: none;
+  height: 5px;
+  margin: 0 var(--margin);
+  border-top: 2px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+}
+
+.page {
+  flex: 1;
+  padding: var(--s-4) var(--margin) var(--s-5);
+}
+
+/* Нижняя панель с главным действием */
+.dock {
+  flex: none;
+  padding: var(--s-3) var(--margin) calc(var(--s-3) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--rule);
+  background: var(--paper);
+}
+
+/* --- Кнопки -------------------------------------------------------------- */
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  width: 100%;
+  min-height: 52px;
+  padding: 0 var(--s-5);
+  border: 1px solid transparent;
+  border-radius: var(--r-control);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.btn-secondary {
+  border-color: var(--ink);
+  background: transparent;
+  color: var(--ink);
+}
+
+.btn-danger {
+  background: var(--red);
+  color: var(--on-red);
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-text {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.btn-text.is-danger {
+  color: var(--red);
+}
+
+/* --- Поля ---------------------------------------------------------------- */
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field + .field {
+  margin-top: var(--s-5);
+}
+
+.field-label {
+  font-size: var(--fs-small);
+  font-weight: 500;
+}
+
+.field-label .optional {
+  color: var(--ink-2);
+  font-weight: 400;
+}
+
+.field-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--stock);
+  color: var(--ink);
+  font-size: var(--fs-body); /* 16px: iOS не масштабирует страницу при фокусе */
+  line-height: 1.4;
+}
+
+.field-input::placeholder {
+  color: var(--ink-2);
+  opacity: 1;
+}
+
+textarea.field-input {
+  min-height: 76px;
+  resize: vertical;
+}
+
+.field-input:focus,
+.field-input.is-focus {
+  border-color: var(--ink);
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.field-input[aria-invalid="true"] {
+  border-color: var(--red);
+  box-shadow: inset 0 0 0 1px var(--red);
+}
+
+.field-hint {
+  color: var(--ink-2);
+  font-size: var(--fs-small);
+}
+
+.form-actions {
+  margin-top: var(--s-6);
+}
+
+* + .form {
+  margin-top: var(--s-5);
+}
+
+.notice + .btn-text {
+  margin-top: var(--s-1);
+}
+
+.btn-text + .form {
+  margin-top: var(--s-3);
+}
+
+/* --- Плашки -------------------------------------------------------------- */
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--r-control);
+  font-size: var(--fs-small);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.notice .icon {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+}
+
+.notice-error {
+  background: var(--red-wash);
+  color: var(--red);
+}
+
+.notice-ok {
+  padding: 0 0 var(--s-4);
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  color: var(--ink);
+}
+
+/* Полоса «нет сети»: во всю ширину, сразу под линейкой */
+.notice-offline {
+  flex: none;
+  margin-top: var(--s-2);
+  padding: 10px var(--margin);
+  border-radius: 0;
+  background: var(--red-wash);
+  color: var(--red);
+}
+
+/* --- Колода -------------------------------------------------------------- */
+
+.search {
+  position: relative;
+}
+
+.search .icon {
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  width: 20px;
+  height: 20px;
+  color: var(--ink-2);
+  translate: 0 -50%;
+  pointer-events: none;
+}
+
+.search .field-input {
+  padding-left: 42px;
+}
+
+.deck {
+  margin: var(--s-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Каскад: каждая следующая карта ложится поверх предыдущей,
+   оставляя видимой полосу с индексом. Особого кода для последней
+   карты нет, её нижний индекс просто никто не закрывает. */
+.deck-item + .deck-item {
+  margin-top: calc(var(--strip) - var(--card-h));
+}
+
+.deck-card {
+  --suit: var(--ink);
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-rows: 30px 18px;
+  align-content: start;
+  column-gap: 14px;
+  height: var(--card-h);
+  padding: 10px 16px 0 12px;
+  border: 1px solid var(--card-line);
+  border-radius: var(--r-card);
+  background: var(--stock);
+  box-shadow: var(--shadow-card);
+  color: var(--ink);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: translate 0.12s ease-out, box-shadow 0.12s ease-out;
+}
+
+.deck-card[data-suit="heart"],
+.deck-card[data-suit="diamond"] {
+  --suit: var(--red);
+}
+
+/* Единственное движение: карту вытягивают из колоды */
+.deck-card:active {
+  translate: 0 -4px;
+  box-shadow: var(--shadow-lift);
+}
+
+.deck-card:focus-visible {
+  z-index: 1;
+}
+
+.deck-card-name {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: var(--fs-name);
+  font-weight: 600;
+  line-height: 30px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.deck-card-used {
+  align-self: center;
+  color: var(--ink-2);
+  font-size: var(--fs-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.deck-card-code {
+  grid-column: 2 / span 2;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  line-height: 18px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Угловой индекс: буква и масть столбиком, в краске масти */
+.pip {
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding-top: 3px;
+  color: var(--suit);
+}
+
+.pip-letter {
+  font-family: var(--font-display);
+  font-size: var(--fs-pip);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pip-suit {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.pip-bottom {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  rotate: 180deg;
+}
+
+/* Пустая колода: место под карту размером ID-1, отмеченное метками обреза */
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--s-6);
+  margin-top: var(--s-10);
+  text-align: center;
+}
+
+.crop {
+  --mark: var(--ink-2);
+  --gap: 14px;
+  --len: 10px;
+  width: 100%;
+  padding: var(--gap);
+  background:
+    linear-gradient(var(--mark), var(--mark)) left 0 top var(--gap) / var(--len) 1px,
+    linear-gradient(var(--mark), var(--mark)) left var(--gap) top 0 / 1px var(--len),
+    linear-gradient(var(--mark), var(--mark)) right 0 top var(--gap) / var(--len) 1px,
+    linear-gradient(var(--mark), var(--mark)) right var(--gap) top 0 / 1px var(--len),
+    linear-gradient(var(--mark), var(--mark)) left 0 bottom var(--gap) / var(--len) 1px,
+    linear-gradient(var(--mark), var(--mark)) left var(--gap) bottom 0 / 1px var(--len),
+    linear-gradient(var(--mark), var(--mark)) right 0 bottom var(--gap) / var(--len) 1px,
+    linear-gradient(var(--mark), var(--mark)) right var(--gap) bottom 0 / 1px var(--len);
+  background-repeat: no-repeat;
+}
+
+.crop-inner {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--s-3);
+  aspect-ratio: 85.6 / 54; /* банковская карта, формат ID-1 */
+  padding: var(--s-6);
+}
+
+.empty-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+}
+
+.empty-text {
+  max-width: 30ch;
+  color: var(--ink-2);
+  text-wrap: balance;
+}
+
+/* --- Показ карты: всегда белый, без оформления вокруг кода --------------- */
+
+.qr-screen {
+  --ink: #1D2B45;
+  --ink-2: #55617A;
+  background: #FFFFFF;
+  color: var(--ink);
+}
+
+.qr-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-2) var(--s-6) 96px; /* низ больше верха: код на оптическом центре */
+  text-align: center;
+}
+
+.qr-name {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+  text-wrap: balance;
+}
+
+.qr {
+  display: block;
+  width: 296px;
+  height: 296px;
+  margin-top: var(--s-5);
+  shape-rendering: crispEdges;
+}
+
+.qr-text {
+  max-width: 296px;
+  margin-top: var(--s-1);
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.qr-note {
+  margin: var(--s-8) 0 0;
+}
+
+.qr-note dt {
+  color: var(--ink-2);
+  font-size: var(--fs-caption);
+}
+
+.qr-note dd {
+  margin: 2px 0 0;
+  font-size: var(--fs-lead);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Добавление, шаг 1: два источника ------------------------------------ */
+
+.sources {
+  display: grid;
+  gap: var(--s-4);
+  margin-top: var(--s-2);
+}
+
+/* label с вложенным input type=file: без JS, работает и в htmx-форме */
+.source {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 200px;
+  padding: var(--s-5);
+  border: 1px solid var(--ink);
+  border-radius: var(--r-control);
+  background: var(--stock);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.source input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.source:focus-within {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.source .icon {
+  width: 32px;
+  height: 32px;
+  stroke-width: 1.4;
+}
+
+.source-title {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+}
+
+.source-text {
+  display: block;
+  margin-top: var(--s-1);
+  color: var(--ink-2);
+  font-size: var(--fs-small);
+}
+
+.source-primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.source-primary .source-text {
+  color: var(--on-ink-2);
+}
+
+/* Сноска: короткая линейка над текстом, как в книге */
+.footnote {
+  position: relative;
+  margin-top: var(--s-8);
+  padding-top: var(--s-3);
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+}
+
+.footnote::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 72px;
+  border-top: 1px solid var(--ink-2);
+}
+
+/* --- Редактирование и удаление ------------------------------------------- */
+
+.meta {
+  margin-top: var(--s-5);
+  color: var(--ink-2);
+  font-size: var(--fs-small);
+}
+
+.danger-zone {
+  margin-top: var(--s-8);
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--rule);
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: var(--scrim);
+}
+
+/* В приложении: <dialog> + showModal(), фон через ::backdrop */
+.sheet {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 4;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: var(--s-8) var(--margin) calc(var(--s-5) + env(safe-area-inset-bottom));
+  border: 0;
+  border-radius: var(--r-sheet) var(--r-sheet) 0 0;
+  background: var(--stock);
+  box-shadow: var(--shadow-sheet);
+  color: var(--ink);
+}
+
+.sheet::backdrop {
+  background: var(--scrim);
+}
+
+.sheet-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+  text-wrap: balance;
+}
+
+.sheet-text {
+  margin: var(--s-3) 0 var(--s-6);
+  color: var(--ink-2);
+}
+
+.sheet-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+}
+
+/* --- Вход: титульный лист ------------------------------------------------ */
+
+.title-page {
+  display: grid;
+  justify-items: center;
+  margin-top: var(--s-12);
+  text-align: center;
+}
+
+.title-page .logo-mark {
+  width: 88px;
+  height: 88px;
+}
+
+.wordmark {
+  margin-top: var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-display);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
+
+.tagline {
+  margin-top: var(--s-3);
+  color: var(--ink-2);
+}
+
+.login-form {
+  margin-top: var(--s-12);
+}
+
+.login-form .notice {
+  margin-top: var(--s-5);
+}
+
+/* --- Логотип, встроенный в разметку: цвета из токенов -------------------- */
+
+.logo-body {
+  fill: var(--ink);
+}
+
+.logo-letter,
+.logo-snap {
+  fill: var(--paper);
+}
+
+.logo-clasp {
+  fill: var(--red);
+  stroke: var(--paper);
+  stroke-width: 2.5;
+}
+
+.logo-card-front {
+  fill: var(--stock);
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+
+.logo-card-back {
+  fill: var(--red);
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck-card {
+    transition: none;
+  }
+
+  .deck-card:active {
+    translate: none;
+  }
+}
+
+/* ==========================================================================
+   4. Только для витрины
+   ========================================================================== */
+
+.phone {
+  position: relative;
+  isolation: isolate;
+  flex: none;
+  width: 390px;
+  height: 844px;
+  overflow: hidden;
+  border-radius: 44px;
+  background: var(--paper);
+  box-shadow: 0 0 0 1px var(--frame-edge), 0 32px 64px -32px rgba(12, 18, 32, 0.45);
+  color: var(--ink);
+  font: 400 var(--fs-body) / var(--lh-text) var(--font-ui);
+}
+
+.phone > .screen {
+  height: 100%;
+}
+
+.phone .page {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+/* Зона домашнего индикатора; в приложении это env(safe-area-inset-bottom) */
+.phone .dock,
+.phone .sheet {
+  padding-bottom: 34px;
+}
+
+
+/* Статус-бар рисует ОС; в приложении вместо него padding-top: env(safe-area-inset-top) */
+.statusbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 47px;
+  padding: 4px 30px 0 36px;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.statusbar svg {
+  display: block;
+  fill: currentColor;
+}
+
+.home-indicator {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  z-index: 5;
+  width: 134px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--ink);
+  translate: -50% 0;
+}
+
+/* Страница-образец */
+.showcase-body {
+  background: var(--desk);
+}
+
+.showcase {
+  max-width: 1760px;
+  margin: 0 auto;
+  padding: 56px 40px 120px;
+}
+
+.showcase-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 64ch);
+  gap: var(--s-6);
+  align-items: start;
+}
+
+.showcase-head img {
+  width: 96px;
+  height: 96px;
+}
+
+.showcase-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-display);
+  font-weight: 600;
+  line-height: 1.05;
+}
+
+.showcase-lead {
+  margin-top: var(--s-3);
+  font-size: var(--fs-lead);
+}
+
+.showcase-lead + .showcase-lead {
+  color: var(--ink-2);
+  font-size: var(--fs-body);
+}
+
+.specimen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--s-10) var(--s-12);
+  margin-top: var(--s-12);
+  padding-top: var(--s-6);
+  border-top: 1px solid var(--ink);
+}
+
+.specimen h2 {
+  margin-bottom: var(--s-4);
+  font-family: var(--font-display);
+  font-size: var(--fs-name);
+  font-weight: 600;
+}
+
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-3) var(--s-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.swatch {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 2px var(--s-3);
+  align-items: center;
+  font-size: var(--fs-small);
+}
+
+.swatch-chip {
+  grid-row: 1 / span 2;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-control);
+  box-shadow: inset 0 0 0 1px var(--card-line);
+}
+
+.swatch-hex {
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.type-sample + .type-sample {
+  margin-top: var(--s-4);
+}
+
+.type-sample-meta {
+  color: var(--ink-2);
+  font-size: var(--fs-caption);
+}
+
+.type-sample-display {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.type-sample-num {
+  font-size: var(--fs-lead);
+}
+
+.type-sample .folio {
+  padding: 0;
+}
+
+.specimen-note {
+  margin-top: var(--s-2);
+}
+
+.pips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+
+.pips .deck-card {
+  display: block;
+  width: 64px;
+  height: 88px;
+  padding: 8px 0 0 6px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.pips .pip {
+  width: 28px;
+}
+
+.marks {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  margin-top: var(--s-6);
+}
+
+.marks img {
+  display: block;
+}
+
+.mask-preview {
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.screen-section {
+  margin-top: 96px;
+}
+
+.screen-section-head {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 64ch);
+  column-gap: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 2px solid var(--ink);
+}
+
+.screen-section-num {
+  grid-row: 1 / span 2;
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.screen-section-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.screen-section-note {
+  margin-top: var(--s-3);
+  color: var(--ink-2);
+}
+
+.screen-section-note code {
+  font-size: 0.9em;
+}
+
+.states {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-12) 72px;
+  margin-top: var(--s-8);
+}
+
+.state-title {
+  margin-bottom: var(--s-4);
+  font-size: var(--fs-lead);
+  font-weight: 600;
+}
+
+.pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-6);
+}
+
+.pair figure {
+  margin: 0;
+}
+
+.pair figcaption {
+  margin-top: var(--s-3);
+  color: var(--ink-2);
+  font-size: var(--fs-small);
+}

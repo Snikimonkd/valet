@@ -1,0 +1,1296 @@
+/* ==========================================================================
+   valet. Вариант C: «Рубашка»
+   --------------------------------------------------------------------------
+   1. Токены (цвет, шрифт, кегли, отступы, радиусы, тени)
+   2. База
+   3. Орнамент «рубашка»
+   4. Компоненты: шапка, кнопки, поля, уведомления, карта колоды
+   5. Экраны: вход, колода, пустая колода, показ QR, добавление, удаление
+   6. Витрина макетов (в приложение не переносить)
+   ========================================================================== */
+
+
+/* 1. ТОКЕНЫ ===============================================================
+   Светлая тема по умолчанию. Тёмная включается через prefers-color-scheme.
+   .theme-light / .theme-dark нужны только витрине: они задают те же
+   переменные, что и медиазапрос. Держать блоки тёмной темы одинаковыми. */
+
+:root,
+.theme-light {
+  color-scheme: light;
+  --paper:        #F1ECDD; /* фон: слоновая кость */
+  --paper-deep:   #E7E0CC; /* утопленные плашки: офлайн, отключённая кнопка */
+  --card:         #FCF9F1; /* лицо карты, поля ввода, листы */
+  --ink:          #1B2540; /* текст, тёмно-синие чернила */
+  --ink-soft:     #4F5874; /* вторичный текст, 6:1 на бумаге */
+  --accent:       #8A2E3B; /* бордо: червы и бубны, ошибки, удаление */
+  --accent-wash:  #F3E4DF; /* фон сообщения об ошибке */
+  --rule:         #D3CAB4; /* волосяные линии, кромка карт */
+  --field-border: #857F6E; /* рамка поля, не меньше 3:1 */
+  --btn-bg:       #1B2540;
+  --btn-ink:      #FCF9F1;
+  --danger-bg:    #8A2E3B;
+  --danger-ink:   #FCF9F1;
+  --suit-red:     #8A2E3B;
+  --suit-black:   #1B2540;
+  --ornament:       rgb(27 37 64 / 0.40); /* линии рубашки */
+  --ornament-frame: rgb(27 37 64 / 0.45); /* рамка рубашки и картуша */
+  --focus:        #1B2540;
+  --scrim:        rgb(18 26 43 / 0.55);
+  --shadow-overlap: 0 -10px 18px -14px rgb(27 37 64 / 0.50);
+  --shadow-raised:  0 1px 2px rgb(27 37 64 / 0.08), 0 12px 28px -16px rgb(27 37 64 / 0.40);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --paper:        #121A2B;
+    --paper-deep:   #0D1320;
+    --card:         #1C2539;
+    --ink:          #EEE7D5;
+    --ink-soft:     #A6ADC0;
+    --accent:       #E3949D;
+    --accent-wash:  #33202C;
+    --rule:         #2E3950;
+    --field-border: #69738E;
+    --btn-bg:       #EEE7D5;
+    --btn-ink:      #121A2B;
+    --danger-bg:    #E3949D;
+    --danger-ink:   #121A2B;
+    --suit-red:     #E3949D;
+    --suit-black:   #EEE7D5;
+    --ornament:       rgb(238 231 213 / 0.20);
+    --ornament-frame: rgb(238 231 213 / 0.30);
+    --focus:        #EEE7D5;
+    --scrim:        rgb(5 8 15 / 0.70);
+    --shadow-overlap: 0 -10px 18px -12px rgb(0 0 0 / 0.70);
+    --shadow-raised:  0 1px 2px rgb(0 0 0 / 0.30), 0 14px 30px -14px rgb(0 0 0 / 0.80);
+  }
+}
+
+/* Копия блока выше для витрины. */
+.theme-dark {
+  color-scheme: dark;
+  --paper:        #121A2B;
+  --paper-deep:   #0D1320;
+  --card:         #1C2539;
+  --ink:          #EEE7D5;
+  --ink-soft:     #A6ADC0;
+  --accent:       #E3949D;
+  --accent-wash:  #33202C;
+  --rule:         #2E3950;
+  --field-border: #69738E;
+  --btn-bg:       #EEE7D5;
+  --btn-ink:      #121A2B;
+  --danger-bg:    #E3949D;
+  --danger-ink:   #121A2B;
+  --suit-red:     #E3949D;
+  --suit-black:   #EEE7D5;
+  --ornament:       rgb(238 231 213 / 0.20);
+  --ornament-frame: rgb(238 231 213 / 0.30);
+  --focus:        #EEE7D5;
+  --scrim:        rgb(5 8 15 / 0.70);
+  --shadow-overlap: 0 -10px 18px -12px rgb(0 0 0 / 0.70);
+  --shadow-raised:  0 1px 2px rgb(0 0 0 / 0.30), 0 14px 30px -14px rgb(0 0 0 / 0.80);
+}
+
+:root {
+  /* Шрифты: только самохостинговые из fonts.css */
+  --font-display: "Cormorant Garamond", Georgia, serif;   /* 500 600 700 */
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; /* 400 500 600 */
+
+  /* Кегли: классический ряд 12 14 16 18 21 24 36 48 */
+  --fs-caption: 0.75rem;    /* 12: подписи витрины */
+  --fs-small:   0.875rem;   /* 14: подписи полей, мета, уведомления */
+  --fs-body:    1rem;       /* 16: текст, поля, кнопки */
+  --fs-lead:    1.125rem;   /* 18: заметка на экране QR */
+  --fs-sub:     1.3125rem;  /* 21: заголовок листа подтверждения */
+  --fs-name:    1.5rem;     /* 24: название карты, буква уголка */
+  --fs-title:   2.25rem;    /* 36: заголовок экрана */
+  --fs-display: 3rem;       /* 48: словесный знак на входе */
+  --lh-tight: 1.1;
+  --lh-ui:    1.4;
+  --lh-body:  1.5;
+
+  /* Отступы: шаг 4 px */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Радиусы: у каждого уровня свой */
+  --radius-field: 8px;
+  --radius-btn:   10px;
+  --radius-card:  12px;
+  --radius-panel: 16px;
+  --radius-sheet: 20px;
+  --radius-pill:  999px;
+
+  /* Размеры касания */
+  --tap:       44px;
+  --field-h:   48px;
+  --control-h: 52px;
+
+  /* Колода */
+  --deck-card-h:  96px;
+  --deck-overlap: 20px;  /* видимая часть карты: 76 px */
+
+  /* Безопасные зоны. Витрина подменяет их на размеры iPhone. */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Орнамент: плитка 60×12 из трёх семейств синусоид со сдвигом фазы
+     на треть периода (гильош). Цвет задаёт --ornament через mask. */
+  --rubashka: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 12'%3E%3Cpath d='M0 -6C5 -9.7 10 -13 15 -13C20 -13 25 -9.7 30 -6C35 -2.3 40 1 45 1C50 1 55 -2.3 60 -6M0 0C5 -3.7 10 -7 15 -7C20 -7 25 -3.7 30 0C35 3.7 40 7 45 7C50 7 55 3.7 60 0M0 6C5 2.3 10 -1 15 -1C20 -1 25 2.3 30 6C35 9.7 40 13 45 13C50 13 55 9.7 60 6M0 12C5 8.3 10 5 15 5C20 5 25 8.3 30 12C35 15.7 40 19 45 19C50 19 55 15.7 60 12M0 18C5 14.3 10 11 15 11C20 11 25 14.3 30 18C35 21.7 40 25 45 25C50 25 55 21.7 60 18M0 -12.1C5 -10.2 10 -5.7 15 -2.5C20 0.7 25 1.9 30 0.1C35 -1.8 40 -6.3 45 -9.5C50 -12.7 55 -13.9 60 -12.1M0 -6.1C5 -4.2 10 0.3 15 3.5C20 6.7 25 7.9 30 6.1C35 4.2 40 -0.3 45 -3.5C50 -6.7 55 -7.9 60 -6.1M0 -0.1C5 1.8 10 6.3 15 9.5C20 12.7 25 13.9 30 12.1C35 10.2 40 5.7 45 2.5C50 -0.7 55 -1.9 60 -0.1M0 5.9C5 7.8 10 12.3 15 15.5C20 18.7 25 19.9 30 18.1C35 16.2 40 11.7 45 8.5C50 5.3 55 4.1 60 5.9M0 11.9C5 13.8 10 18.3 15 21.5C20 24.7 25 25.9 30 24.1C35 22.2 40 17.7 45 14.5C50 11.3 55 10.1 60 11.9M0 0.1C5 1.9 10 0.7 15 -2.5C20 -5.7 25 -10.2 30 -12.1C35 -13.9 40 -12.7 45 -9.5C50 -6.3 55 -1.8 60 0.1M0 6.1C5 7.9 10 6.7 15 3.5C20 0.3 25 -4.2 30 -6.1C35 -7.9 40 -6.7 45 -3.5C50 -0.3 55 4.2 60 6.1M0 12.1C5 13.9 10 12.7 15 9.5C20 6.3 25 1.8 30 -0.1C35 -1.9 40 -0.7 45 2.5C50 5.7 55 10.2 60 12.1M0 18.1C5 19.9 10 18.7 15 15.5C20 12.3 25 7.8 30 5.9C35 4.1 40 5.3 45 8.5C50 11.7 55 16.2 60 18.1M0 24.1C5 25.9 10 24.7 15 21.5C20 18.3 25 13.8 30 11.9C35 10.1 40 11.3 45 14.5C50 17.7 55 22.2 60 24.1' fill='none' stroke='black' stroke-width='0.45'/%3E%3C/svg%3E");
+  --rubashka-size: 60px 12px;
+}
+
+
+/* 2. БАЗА ================================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-body);
+  font-weight: 400;
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, p, figure {
+  margin: 0;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Спрайт с символами: не display:none, иначе ломается mask у логотипа */
+.sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.icon {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding-top: var(--safe-top);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.screen-main {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--space-5) var(--space-6);
+}
+
+
+/* 3. ОРНАМЕНТ «РУБАШКА» ====================================================
+   .cardback — кромка, как у обратной стороны карты: линия, поле бумаги.
+   .rubashka — само поле с сеткой. Один класс, одна переменная, без JS. */
+
+.cardback {
+  padding: 5px;
+  border: 1px solid var(--ornament-frame);
+  border-radius: var(--radius-card);
+  background: var(--paper);
+}
+
+.rubashka {
+  position: relative;
+  isolation: isolate;
+  border-radius: 7px;
+}
+
+.rubashka::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-color: var(--ornament);
+  -webkit-mask: var(--rubashka) 0 0 / var(--rubashka-size) repeat;
+  mask: var(--rubashka) 0 0 / var(--rubashka-size) repeat;
+}
+
+/* Картуш: бумажная плашка с двойной линией поверх сетки */
+.medallion {
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  border: 1px solid var(--ornament-frame);
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: 0 0 0 4px var(--paper), 0 0 0 5px var(--ornament-frame);
+}
+
+.medallion-mark {
+  width: 64px;
+  height: 64px;
+  color: var(--ink);
+}
+
+.medallion--small {
+  width: 68px;
+  height: 68px;
+  box-shadow: 0 0 0 3px var(--paper), 0 0 0 4px var(--ornament-frame);
+}
+
+.medallion--small .medallion-mark {
+  width: 40px;
+  height: 40px;
+}
+
+
+/* 4. КОМПОНЕНТЫ ============================================================ */
+
+/* Шапка приложения: узкая полоса рубашки с картушем по центру */
+.app-header {
+  padding: var(--space-2) var(--space-3) 0;
+}
+
+.app-band {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 62px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap);
+  padding: 0 var(--space-5) 0 var(--space-4);
+  border: 1px solid var(--ornament-frame);
+  border-radius: var(--radius-pill);
+  background: var(--paper);
+  box-shadow: 0 0 0 3px var(--paper), 0 0 0 4px var(--ornament-frame);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.brand-mark {
+  width: 28px;
+  height: 28px;
+}
+
+.brand-name {
+  font-family: var(--font-display);
+  font-size: var(--fs-name);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  padding-bottom: 2px;
+}
+
+/* Верхняя панель вложенных экранов */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 56px;
+  padding: var(--space-1) var(--space-2);
+}
+
+.top-bar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0 var(--space-3) 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-btn);
+  background: none;
+  color: var(--ink);
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.top-bar-btn .icon {
+  width: 22px;
+  height: 22px;
+}
+
+/* Заголовки */
+.page-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-5) 0 var(--space-3);
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+}
+
+.page-count {
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.step {
+  margin-top: var(--space-1);
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
+}
+
+/* Кнопки */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-h);
+  padding: 0 var(--space-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-btn);
+  font-family: var(--font-ui);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s var(--ease);
+}
+
+.btn .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-primary {
+  background: var(--btn-bg);
+  color: var(--btn-ink);
+}
+
+.btn-secondary {
+  border-color: var(--field-border);
+  background: transparent;
+  color: var(--ink);
+}
+
+.btn-danger {
+  background: var(--danger-bg);
+  color: var(--danger-ink);
+}
+
+.btn-danger-outline {
+  border-color: var(--accent);
+  background: transparent;
+  color: var(--accent);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  border: 1px dashed var(--field-border);
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  color: var(--ink);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+/* Поля */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.form-top {
+  margin-top: var(--space-6);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: var(--fs-small);
+  font-weight: 500;
+  line-height: var(--lh-ui);
+}
+
+.field-optional {
+  color: var(--ink-soft);
+  font-weight: 400;
+}
+
+.field-input {
+  width: 100%;
+  min-height: var(--field-h);
+  padding: 12px 14px;
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-field);
+  background: var(--card);
+  color: var(--ink);
+  font-size: var(--fs-body); /* 16 px: iOS не зумит поле */
+  line-height: var(--lh-ui);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.field-input::placeholder {
+  color: var(--ink-soft);
+  opacity: 1;
+}
+
+.field-input:focus-visible,
+.field-input.is-focused {
+  border-color: var(--focus);
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.field-input[aria-invalid="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* Содержимое QR и номера: цифры одной ширины */
+.field-code {
+  min-height: 92px;
+  resize: vertical;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+}
+
+.field-hint {
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
+  line-height: var(--lh-ui);
+}
+
+/* Уведомления */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  font-size: var(--fs-small);
+  line-height: var(--lh-ui);
+}
+
+.notice .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.notice-error {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-field);
+  background: var(--accent-wash);
+  color: var(--ink);
+}
+
+.notice-error .icon {
+  color: var(--accent);
+}
+
+.notice-title {
+  font-weight: 500;
+}
+
+.notice-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  margin-bottom: -10px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.notice-ok {
+  color: var(--ink);
+}
+
+/* Плашка офлайна: спокойная, это не ошибка */
+.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin: var(--space-3) var(--space-3) 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-field);
+  background: var(--paper-deep);
+  color: var(--ink);
+  font-size: var(--fs-small);
+  line-height: var(--lh-ui);
+}
+
+.banner .icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Поиск */
+.search {
+  position: relative;
+  margin-bottom: var(--space-6);
+}
+
+.search-icon {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  width: 20px;
+  height: 20px;
+  color: var(--ink-soft);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.search-input {
+  padding-left: 44px;
+}
+
+.search-input::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+
+/* Уголок игральной карты: первая буква магазина и масть.
+   Масть = hash(name) % 4 на сервере (например FNV-1a), только для различия. */
+.card-index {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  width: 24px;
+  line-height: 1;
+}
+
+.card-index-letter {
+  font-family: var(--font-display);
+  font-size: var(--fs-name);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card-index-suit {
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+  fill: currentColor;
+}
+
+.card-index--mirror {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  transform: rotate(180deg);
+}
+
+.suit-red {
+  color: var(--suit-red);
+}
+
+.suit-black {
+  color: var(--suit-black);
+}
+
+/* Колода: лицевые карты внахлёст, как веер в руке.
+   Каждая следующая перекрывает низ предыдущей; видно 76 px, этого
+   хватает для касания. Нижний уголок виден только у последней. */
+.deck {
+  margin: 0;
+  padding: var(--space-1) 0 var(--space-6);
+  list-style: none;
+}
+
+.deck-item + .deck-item {
+  margin-top: calc(-1 * var(--deck-overlap));
+}
+
+.playing-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-height: var(--deck-card-h);
+  padding: 14px var(--space-4);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: var(--shadow-overlap);
+  color: var(--ink);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.16s var(--ease);
+}
+
+/* Лёгкий веер: доли градуса, текст остаётся ровным на глаз */
+.deck-item:nth-child(3n + 1) .playing-card {
+  rotate: -0.5deg;
+}
+
+.deck-item:nth-child(3n + 2) .playing-card {
+  rotate: 0.35deg;
+  translate: 3px 0;
+}
+
+.deck-item:nth-child(3n) .playing-card {
+  rotate: -0.2deg;
+  translate: -2px 0;
+}
+
+/* Нажатие: карта чуть выходит из веера */
+.playing-card:active {
+  z-index: 1;
+  transform: translateY(-6px);
+}
+
+.playing-card:focus-visible {
+  z-index: 1;
+}
+
+.deck-item:not(:last-child) .card-index--mirror {
+  visibility: hidden;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.card-name {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: var(--fs-name);
+  font-weight: 600;
+  line-height: 1.15;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.card-meta {
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
+  line-height: var(--lh-ui);
+}
+
+/* Нижняя панель с главным действием */
+.bottom-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: auto;
+  padding: var(--space-3) var(--space-5) calc(var(--space-3) + var(--safe-bottom));
+  border-top: 1px solid var(--rule);
+  background: var(--paper);
+}
+
+
+/* 5. ЭКРАНЫ ================================================================ */
+
+/* Вход: весь экран как рубашка, форма лежит поверх лицевой картой «валет» */
+.screen-login {
+  padding: calc(var(--safe-top) + var(--space-3)) var(--space-3) calc(var(--safe-bottom) + var(--space-3));
+}
+
+.login-back {
+  display: flex;
+  flex: 1;
+}
+
+.login-field {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-6) var(--space-4) var(--space-4);
+}
+
+/* Медальон по центру свободного поля над формой */
+.login-field > .medallion {
+  margin-block: auto;
+}
+
+.login-card {
+  position: relative;
+  width: 100%;
+  padding: var(--space-8) var(--space-6) 56px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-panel);
+  background: var(--card);
+  box-shadow: var(--shadow-raised);
+}
+
+.login-card > .card-index {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+}
+
+.login-card > .card-index--mirror {
+  top: auto;
+  left: auto;
+  right: 14px;
+  bottom: 14px;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-size: var(--fs-display);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-align: center;
+}
+
+.tagline {
+  margin: var(--space-2) 0 var(--space-6);
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+/* Пустая колода: одна карта рубашкой вверх */
+.empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-3) var(--space-10);
+  text-align: center;
+}
+
+.facedown {
+  width: 148px;
+  height: 206px;
+  margin-bottom: var(--space-10);
+  border-color: var(--rule);
+  background: var(--card);
+  box-shadow: var(--shadow-raised);
+  transform: rotate(-4deg);
+}
+
+.facedown > .rubashka {
+  display: grid;
+  place-items: center;
+  height: 100%;
+}
+
+.empty-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+}
+
+.empty-text {
+  max-width: 30ch;
+  margin: var(--space-3) 0 var(--space-8);
+  color: var(--ink-soft);
+}
+
+/* Показ карты: всегда белый фон и чёрный код, вне темы и без орнамента */
+.screen-qr {
+  --qr-ink: #000000;
+  --qr-soft: #4D4D4D;
+  --focus: #000000;
+  color-scheme: light;
+  background: #FFFFFF;
+  color: var(--qr-ink);
+}
+
+.screen-qr .top-bar-btn {
+  color: var(--qr-ink);
+}
+
+.qr-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-4) var(--space-6) var(--space-10);
+  text-align: center;
+}
+
+.qr-name {
+  margin-bottom: var(--space-6);
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+}
+
+.qr-code {
+  display: block;
+  width: min(100%, 320px);
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.qr-text {
+  max-width: 100%;
+  margin-top: var(--space-4);
+  color: var(--qr-soft);
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+}
+
+.qr-note {
+  margin-top: var(--space-6);
+  font-size: var(--fs-lead);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Добавление, шаг 1: два больших выбора, оформленных как лицевые карты */
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: var(--space-8) 0 var(--space-4);
+}
+
+.choice {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  min-height: 168px;
+  padding: var(--space-5);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: var(--shadow-raised);
+  cursor: pointer;
+}
+
+.choice:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.choice-icon {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  width: 30px;
+  height: 30px;
+  stroke-width: 1.5;
+}
+
+.choice-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-name);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+}
+
+.choice-hint {
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
+  line-height: var(--lh-ui);
+}
+
+/* Изменение и удаление */
+.danger-zone {
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--rule);
+}
+
+/* Подтверждение удаления. В приложении это <dialog> с showModal():
+   фон затемняет dialog::backdrop { background: var(--scrim) }. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  background: var(--scrim);
+}
+
+.sheet {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: var(--space-6) var(--space-6) calc(var(--space-6) + var(--safe-bottom));
+  border: 0;
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  background: var(--card);
+  color: var(--ink);
+}
+
+.sheet::backdrop {
+  background: var(--scrim);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.sheet-title {
+  padding-top: 1px;
+  font-family: var(--font-display);
+  font-size: var(--fs-name);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.sheet-text {
+  margin: var(--space-3) 0 var(--space-6) 38px;
+  color: var(--ink-soft);
+}
+
+.sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .playing-card {
+    transition: none;
+  }
+
+  .playing-card:active {
+    transform: none;
+  }
+}
+
+
+/* 6. ВИТРИНА МАКЕТОВ ========================================================
+   Только для этой страницы: рамки телефонов, подписи, образцы. */
+
+.showcase {
+  padding: 56px 40px 120px;
+  background: #DDD7C9;
+  color: #1B2540;
+}
+
+.sc-head {
+  display: grid;
+  gap: var(--space-6);
+  max-width: 1200px;
+}
+
+.sc-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.sc-brand img {
+  width: 64px;
+  height: 64px;
+}
+
+.sc-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-display);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.sc-lead {
+  max-width: 66ch;
+  font-size: var(--fs-lead);
+  line-height: var(--lh-body);
+}
+
+.sc-text {
+  max-width: 68ch;
+  color: #4F5874;
+}
+
+.sc-kit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-10) 56px;
+  margin-top: var(--space-4);
+}
+
+.sc-kit-title {
+  margin-bottom: var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-name);
+  font-weight: 600;
+}
+
+.sc-swatches {
+  display: grid;
+  grid-template-columns: repeat(5, 112px);
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sc-swatch {
+  font-size: var(--fs-caption);
+  line-height: 1.35;
+}
+
+.sc-swatch-chip {
+  display: block;
+  height: 56px;
+  margin-bottom: 6px;
+  border: 1px solid rgb(27 37 64 / 0.2);
+  border-radius: var(--radius-field);
+}
+
+.sc-swatch-hex {
+  font-variant-numeric: tabular-nums;
+  color: #4F5874;
+}
+
+.sc-type {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 340px;
+}
+
+.sc-type-display {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.sc-type-ui {
+  font-size: var(--fs-body);
+}
+
+.sc-type-num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+}
+
+.sc-type-note {
+  color: #4F5874;
+  font-size: var(--fs-caption);
+}
+
+.sc-icons {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-6);
+}
+
+.sc-icons figure {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+}
+
+.sc-icons figcaption {
+  color: #4F5874;
+  font-size: var(--fs-caption);
+}
+
+.sc-icon-square {
+  border-radius: 22%;
+}
+
+.sc-icon-circle {
+  clip-path: circle(40%); /* минимальная безопасная зона maskable */
+}
+
+.sc-section {
+  margin-top: 88px;
+}
+
+.sc-section-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+}
+
+.sc-section .sc-text {
+  margin-top: var(--space-2);
+}
+
+.sc-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-10) 44px;
+  margin-top: var(--space-8);
+}
+
+.sc-frame figcaption {
+  max-width: 390px;
+  margin-top: 22px;
+  color: #4F5874;
+  font-size: var(--fs-small);
+}
+
+/* Телефон 390×844. Подменяет безопасные зоны на значения iPhone. */
+.device {
+  --safe-top: 47px;
+  --safe-bottom: 34px;
+  position: relative;
+  width: 390px;
+  height: 844px;
+  overflow: hidden;
+  border-radius: 54px;
+  background: var(--paper);
+  box-shadow:
+    0 0 0 11px #22262F,
+    0 0 0 12px #3B404C,
+    0 36px 60px -24px rgb(20 24 35 / 0.5);
+}
+
+.device .screen {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.device .screen::-webkit-scrollbar {
+  display: none;
+}
+
+.device-status {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 47px;
+  padding: 4px 30px 0 46px;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.device-status svg {
+  width: 66px;
+  height: 13px;
+  fill: currentColor;
+}
+
+.device::after {
+  content: "";
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  z-index: 30;
+  width: 134px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--ink);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.device--qr {
+  background: #FFFFFF;
+}
+
+.device--qr .device-status {
+  color: #000000;
+}
+
+.device--qr::after {
+  background: #000000;
+}

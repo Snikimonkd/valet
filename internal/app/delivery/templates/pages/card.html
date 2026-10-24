@@ -1,0 +1,46 @@
+{{define "content"}}
+{{with .Page}}
+{{/* экран кассы: белый в любой теме, вокруг кода ничего, иначе сканер промахивается.
+     Пока карта на экране, app.js не даёт телефону погасить экран (Screen Wake Lock) */}}
+<header class="bar">
+  <a class="bar-back" href="/"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>Колода</a>
+  <span></span>
+  <span></span>
+</header>
+{{end}}
+{{template "banners"}}
+{{with .Page}}
+<main class="qr-main">
+  <h1 class="qr-name">{{.Name}}</h1>
+  <img class="qr" src="{{.QRURL}}" alt="QR-код карты {{.Name}}" width="720" height="720">
+  <p class="qr-text">{{.Code}}</p>
+  {{with .Note}}
+  <dl class="qr-note">
+    <dt>Заметка</dt>
+    <dd>{{.}}</dd>
+  </dl>
+  {{end}}
+</main>
+{{/* внизу, подальше от кода. Удаление - только с подтверждением: случайное нажатие на кассе ничего не сотрёт.
+     app.js открывает подтверждение окном поверх этого экрана, без js ссылка ведёт на отдельную страницу */}}
+<div class="dock dock-stack">
+  <a class="btn btn-secondary" href="/cards/{{.ID}}/edit">Изменить карту</a>
+  <a class="btn btn-danger" href="/cards/{{.ID}}/delete" data-dialog="delete-dialog">Удалить карту</a>
+</div>
+<dialog class="modal" id="delete-dialog" aria-labelledby="delete-dialog-title">
+  <div class="modal-body">
+    <h2 class="modal-title" id="delete-dialog-title">Удалить «{{.Name}}»?</h2>
+    <p class="modal-text">Карта пропадёт с этого и всех остальных телефонов. Вернуть её можно, только добавив заново.</p>
+    <div class="modal-actions">
+      {{/* method="dialog" закрывает окно без запроса на сервер */}}
+      <form method="dialog">
+        <button class="btn btn-secondary" type="submit" autofocus>Оставить</button>
+      </form>
+      <form method="post" action="/cards/{{.ID}}/delete">
+        <button class="btn btn-danger" type="submit">Удалить</button>
+      </form>
+    </div>
+  </div>
+</dialog>
+{{end}}
+{{end}}

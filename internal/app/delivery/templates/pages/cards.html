@@ -1,0 +1,51 @@
+{{define "content"}}
+{{template "rubashka"}}
+<header class="bar">
+  <a class="brand" href="/" aria-label="valet, все карты">{{template "logo"}}</a>
+  <h1 class="runhead">Колода</h1>
+  <span class="folio">{{if .Page.Cards}}{{.Page.Count}}{{end}}</span>
+</header>
+<div class="rule-oxford"></div>
+{{template "banners"}}
+{{with .Page}}
+<main class="page">
+  {{if .Cards}}
+  <div class="search" role="search">
+    <label class="visually-hidden" for="f-filter">Найти карту</label>
+    <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+    <input class="field-input" id="f-filter" type="search" placeholder="Найти карту" autocomplete="off" data-filter>
+  </div>
+  {{/* недавно показанные сверху; масть и букву считает сервер, см. delivery.newCardView */}}
+  <ol class="deck">
+    {{range .Cards}}
+    <li class="deck-item" data-card-name="{{.Name}}" data-offline="{{.OfflineURLs}}">
+      <a class="deck-card" href="{{.URL}}" data-suit="{{.Suit}}">
+        {{template "pip" .}}
+        <span class="deck-card-name">{{.Name}}</span>
+        <span class="deck-card-code">{{.Code}}</span>
+        <time class="deck-card-used" datetime="{{.UsedAt.Format "2006-01-02T15:04:05Z07:00"}}">{{.Used}}</time>
+        {{template "pip_bottom" .}}
+      </a>
+    </li>
+    {{end}}
+  </ol>
+  <p class="deck-empty" data-filter-empty hidden>Таких карт в колоде нет</p>
+  {{else}}
+  <div class="empty">
+    <div class="crop">
+      <div class="crop-inner">
+        <h2 class="empty-title">Колода пуста</h2>
+        <p class="empty-text">Добавь первую карту: сфоткай QR-код или загрузи скриншот из приложения магазина.</p>
+      </div>
+    </div>
+  </div>
+  {{end}}
+  <form class="signout" method="post" action="/logout">
+    <button class="btn-text" type="submit">Выйти</button>
+  </form>
+</main>
+<div class="dock">
+  <a class="btn {{if .Cards}}btn-secondary{{else}}btn-primary{{end}}" href="/cards/new">Добавить карту</a>
+</div>
+{{end}}
+{{end}}

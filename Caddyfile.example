@@ -1,0 +1,6 @@
+# Caddy на VPS перед valet: сам выпускает и продлевает TLS-сертификат для домена.
+# Положить в /etc/caddy/Caddyfile, заменив домен, и перезапустить caddy
+valet.example.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8000
+}

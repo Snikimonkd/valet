@@ -1,0 +1,1140 @@
+/* valet: «Типография» - две краски (синька и бордо) на слоновой бумаге.
+   Знак и узор рубашки - из варианта «Рубашка», см. design/proposals.
+   Разделы: 1. токены  2. база  3. компоненты  4. правки поверх макета */
+
+/* ==========================================================================
+   1. Токены
+   ========================================================================== */
+
+/* Не зависят от темы */
+:root {
+  /* PT Serif и PT Sans - одна пара: у них общие пропорции и высота строчных, поэтому заголовки
+     с засечками и кнопки без засечек не спорят друг с другом. Начертаний два: 400 и 700 */
+  --font-display: "PT Serif", Georgia, serif;
+  --font-ui: "PT Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Классическая типографская шкала (Брингхерст): 12 14 16 18 24 36 48 */
+  --fs-caption: 0.75rem;   /* 12 */
+  --fs-small: 0.875rem;    /* 14 */
+  --fs-body: 1rem;         /* 16 */
+  --fs-lead: 1.125rem;     /* 18 */
+  /* кегли антиквы меньше, чем были у Cormorant: у PT Serif строчные заметно выше */
+  --fs-name: 1.3125rem;    /* 21, название карты в колоде */
+  --fs-title: 2rem;        /* 32, заголовки, имя на экране QR */
+  --fs-display: 2.625rem;  /* 42, словесный знак на входе */
+  --fs-pip: 1.25rem;       /* 20, буква углового индекса */
+  --fs-runhead: 0.8125rem; /* 13, капитель колонтитула */
+
+  --lh-tight: 1.15;
+  --lh-text: 1.5;
+  --track-caps: 0.14em;    /* разрядка капители в колонтитуле */
+
+  /* Отступы: шаг 4 */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-12: 48px;
+  --margin: 20px;          /* поле полосы */
+
+  /* Скругления: у каждого уровня своё */
+  --r-control: 4px;        /* кнопки и поля: печатная форма */
+  --r-card: 14px;          /* карты колоды: угол игральной карты */
+  --r-sheet: 20px;         /* нижний лист подтверждения */
+
+  --tap: 44px;             /* минимальная зона нажатия */
+  --strip: 84px;           /* видимая полоса карты в колоде: под номером остаётся место для пальца */
+  --card-h: 112px;         /* полная высота карты; разница уходит под следующую */
+}
+
+/* Светлая тема: печать синькой и бордо по слоновой бумаге */
+:root {
+  color-scheme: light;
+  --paper: #F3EDDF;        /* бумага: фон экранов */
+  --stock: #FBF8F1;        /* картон: карты, поля, листы */
+  --ink: #1D2B45;          /* синька: текст, масти ♠ ♣ */
+  --ink-2: #55617A;        /* разбелённая синька: вторичный текст (5.3:1 на бумаге) */
+  --red: #7B2333;          /* бордо: масти ♥ ♦, ошибки, удаление (8.4:1) */
+  --red-wash: #F1E2DC;     /* подложка плашек бордо */
+  --rule: #D6CFBF;         /* волосяная линейка, декоративная */
+  --line: #7E8597;         /* граница полей ввода (3.2:1, WCAG 1.4.11) */
+  --card-line: rgba(29, 43, 69, 0.18);
+  --on-ink: #F3EDDF;       /* текст на синьке */
+  --on-ink-2: rgba(243, 237, 223, 0.78);
+  --on-red: #FBF8F1;
+  --scrim: rgba(29, 43, 69, 0.42);
+  --shadow-card: 0 -3px 8px -4px rgba(29, 43, 69, 0.28), 0 1px 1px rgba(29, 43, 69, 0.06);
+  --shadow-lift: 0 -8px 16px -8px rgba(29, 43, 69, 0.38);
+  --shadow-sheet: 0 -12px 32px -12px rgba(29, 43, 69, 0.35);
+}
+
+/* Тёмная тема: выворотка, светлая краска по синему картону */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --paper: #141C2E;
+    --stock: #1B2539;
+    --ink: #EEE7D7;
+    --ink-2: #A3AABA;
+    --red: #D48A95;
+    --red-wash: #2A2033;
+    --rule: #2E3850;
+    --line: #6E7891;
+    --card-line: rgba(238, 231, 215, 0.14);
+    --on-ink: #141C2E;
+    --on-ink-2: rgba(20, 28, 46, 0.75);
+    --on-red: #141C2E;
+    --scrim: rgba(5, 8, 15, 0.6);
+    --shadow-card: 0 -3px 10px -4px rgba(0, 0, 0, 0.6);
+    --shadow-lift: 0 -8px 18px -8px rgba(0, 0, 0, 0.7);
+    --shadow-sheet: 0 -12px 32px -12px rgba(0, 0, 0, 0.7);
+  }
+}
+
+
+/* ==========================================================================
+   2. База
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 var(--fs-body) / var(--lh-text) var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.icon {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+}
+
+/* ==========================================================================
+   3. Компоненты приложения
+   ========================================================================== */
+
+/* Экран: в приложении это body > main */
+.screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* Колонтитул: назад слева, капитель по центру, колонцифра справа */
+.bar {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 var(--s-2);
+}
+
+.bar > :last-child {
+  justify-self: end;
+}
+
+.bar-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: var(--tap);
+  padding: 0 var(--s-3) 0 var(--s-1);
+  border-radius: var(--r-control);
+  color: var(--ink);
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.bar-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--s-3);
+  border-radius: var(--r-control);
+  color: var(--ink);
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--s-3);
+}
+
+.brand .logo-mark {
+  width: 34px;
+  height: 34px;
+}
+
+/* Капитель. Настоящей капители (smcp) в PT Serif нет, поэтому прописные
+   кеглем меньше и с разрядкой, как делали наборщики. */
+.runhead {
+  font-family: var(--font-display);
+  font-size: var(--fs-runhead);
+  font-weight: 700;
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Колонцифра: счётчик карт в правом углу колонтитула */
+.folio {
+  padding-right: var(--s-3);
+  color: var(--ink-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Оксфордская линейка: толстая и тонкая, один раз на экран */
+.rule-oxford {
+  flex: none;
+  height: 5px;
+  margin: 0 var(--margin);
+  border-top: 2px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+}
+
+.page {
+  flex: 1;
+  padding: var(--s-4) var(--margin) var(--s-5);
+}
+
+/* Нижняя панель с главным действием */
+.dock {
+  flex: none;
+  padding: var(--s-3) var(--margin) calc(var(--s-3) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--rule);
+  background: var(--paper);
+}
+
+/* --- Кнопки -------------------------------------------------------------- */
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  width: 100%;
+  min-height: 52px;
+  padding: 0 var(--s-5);
+  border: 1px solid transparent;
+  border-radius: var(--r-control);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.btn-secondary {
+  border-color: var(--ink);
+  background: transparent;
+  color: var(--ink);
+}
+
+.btn-danger {
+  background: var(--red);
+  color: var(--on-red);
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-text {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-weight: 400;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.btn-text.is-danger {
+  color: var(--red);
+}
+
+/* --- Поля ---------------------------------------------------------------- */
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field + .field {
+  margin-top: var(--s-5);
+}
+
+.field-label {
+  font-size: var(--fs-small);
+  font-weight: 400;
+}
+
+.field-label .optional {
+  color: var(--ink-2);
+  font-weight: 400;
+}
+
+.field-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--stock);
+  color: var(--ink);
+  font-size: var(--fs-body); /* 16px: iOS не масштабирует страницу при фокусе */
+  line-height: 1.4;
+}
+
+.field-input::placeholder {
+  color: var(--ink-2);
+  opacity: 1;
+}
+
+textarea.field-input {
+  min-height: 76px;
+  resize: vertical;
+}
+
+.field-input:focus,
+.field-input.is-focus {
+  border-color: var(--ink);
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.field-input[aria-invalid="true"] {
+  border-color: var(--red);
+  box-shadow: inset 0 0 0 1px var(--red);
+}
+
+.field-hint {
+  color: var(--ink-2);
+  font-size: var(--fs-small);
+}
+
+.form-actions {
+  margin-top: var(--s-6);
+}
+
+* + .form {
+  margin-top: var(--s-5);
+}
+
+.notice + .btn-text {
+  margin-top: var(--s-1);
+}
+
+.btn-text + .form {
+  margin-top: var(--s-3);
+}
+
+/* --- Плашки -------------------------------------------------------------- */
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--r-control);
+  font-size: var(--fs-small);
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.notice .icon {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+}
+
+.notice-error {
+  background: var(--red-wash);
+  color: var(--red);
+}
+
+.notice-ok {
+  padding: 0 0 var(--s-4);
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  color: var(--ink);
+}
+
+/* Полоса «нет сети»: во всю ширину, сразу под линейкой */
+.notice-offline {
+  flex: none;
+  margin-top: var(--s-2);
+  padding: 10px var(--margin);
+  border-radius: 0;
+  background: var(--red-wash);
+  color: var(--red);
+}
+
+/* --- Колода -------------------------------------------------------------- */
+
+.search {
+  position: relative;
+}
+
+.search .icon {
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  width: 20px;
+  height: 20px;
+  color: var(--ink-2);
+  translate: 0 -50%;
+  pointer-events: none;
+}
+
+.search .field-input {
+  padding-left: 42px;
+}
+
+.deck {
+  margin: var(--s-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Каскад: каждая следующая карта ложится поверх предыдущей, оставляя видимой полосу с индексом.
+   Отступ считается от предыдущей видимой карты: спрятанные фильтром места не занимают */
+.deck-item:not([hidden]) ~ .deck-item {
+  margin-top: calc(var(--strip) - var(--card-h));
+}
+
+.deck-card {
+  --suit: var(--ink);
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-rows: 30px 18px;
+  align-content: start;
+  column-gap: 14px;
+  height: var(--card-h);
+  padding: 10px 16px 0 12px;
+  border: 1px solid var(--card-line);
+  border-radius: var(--r-card);
+  background: var(--stock);
+  box-shadow: var(--shadow-card);
+  color: var(--ink);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: translate 0.12s ease-out, box-shadow 0.12s ease-out;
+}
+
+.deck-card[data-suit="heart"],
+.deck-card[data-suit="diamond"] {
+  --suit: var(--red);
+}
+
+/* Единственное движение: карту вытягивают из колоды */
+.deck-card:active {
+  translate: 0 -4px;
+  box-shadow: var(--shadow-lift);
+}
+
+.deck-card:focus-visible {
+  z-index: 1;
+}
+
+.deck-card-name {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: var(--fs-name);
+  font-weight: 700;
+  line-height: 30px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.deck-card-used {
+  align-self: center;
+  color: var(--ink-2);
+  font-size: var(--fs-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.deck-card-code {
+  grid-column: 2 / span 2;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  line-height: 18px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Угловой индекс: буква и масть столбиком, в краске масти */
+.pip {
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding-top: 3px;
+  color: var(--suit);
+}
+
+.pip-letter {
+  font-family: var(--font-display);
+  font-size: var(--fs-pip);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pip-suit {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.pip-bottom {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  rotate: 180deg;
+}
+
+/* Пустая колода: место под карту размером ID-1, отмеченное метками обреза */
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--s-6);
+  margin-top: var(--s-10);
+  text-align: center;
+}
+
+.crop {
+  --mark: var(--ink-2);
+  --gap: 14px;
+  --len: 10px;
+  width: 100%;
+  padding: var(--gap);
+  background:
+    linear-gradient(var(--mark), var(--mark)) left 0 top var(--gap) / var(--len) 1px,
+    linear-gradient(var(--mark), var(--mark)) left var(--gap) top 0 / 1px var(--len),
+    linear-gradient(var(--mark), var(--mark)) right 0 top var(--gap) / var(--len) 1px,
+    linear-gradient(var(--mark), var(--mark)) right var(--gap) top 0 / 1px var(--len),
+    linear-gradient(var(--mark), var(--mark)) left 0 bottom var(--gap) / var(--len) 1px,
+    linear-gradient(var(--mark), var(--mark)) left var(--gap) bottom 0 / 1px var(--len),
+    linear-gradient(var(--mark), var(--mark)) right 0 bottom var(--gap) / var(--len) 1px,
+    linear-gradient(var(--mark), var(--mark)) right var(--gap) bottom 0 / 1px var(--len);
+  background-repeat: no-repeat;
+}
+
+.crop-inner {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--s-3);
+  aspect-ratio: 85.6 / 54; /* банковская карта, формат ID-1 */
+  padding: var(--s-6);
+}
+
+.empty-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+}
+
+.empty-text {
+  max-width: 30ch;
+  color: var(--ink-2);
+  text-wrap: balance;
+}
+
+/* --- Показ карты: всегда белый, без оформления вокруг кода --------------- */
+
+.qr-screen {
+  --ink: #1D2B45;
+  --ink-2: #55617A;
+  background: #FFFFFF;
+  color: var(--ink);
+}
+
+.qr-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-2) var(--s-6) 96px; /* низ больше верха: код на оптическом центре */
+  text-align: center;
+}
+
+.qr-name {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  text-wrap: balance;
+}
+
+.qr {
+  display: block;
+  width: 296px;
+  height: 296px;
+  margin-top: var(--s-5);
+  shape-rendering: crispEdges;
+}
+
+.qr-text {
+  max-width: 296px;
+  margin-top: var(--s-1);
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.qr-note {
+  margin: var(--s-8) 0 0;
+}
+
+.qr-note dt {
+  color: var(--ink-2);
+  font-size: var(--fs-caption);
+}
+
+.qr-note dd {
+  margin: 2px 0 0;
+  font-size: var(--fs-lead);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Добавление, шаг 1: два источника ------------------------------------ */
+
+.sources {
+  display: grid;
+  gap: var(--s-4);
+  margin-top: var(--s-2);
+}
+
+/* label с вложенным input type=file: без JS, работает и в htmx-форме */
+.source {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 200px;
+  padding: var(--s-5);
+  border: 1px solid var(--ink);
+  border-radius: var(--r-control);
+  background: var(--stock);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.source input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.source:focus-within {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.source .icon {
+  width: 32px;
+  height: 32px;
+  stroke-width: 1.4;
+}
+
+.source-title {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+}
+
+.source-text {
+  display: block;
+  margin-top: var(--s-1);
+  color: var(--ink-2);
+  font-size: var(--fs-small);
+}
+
+.source-primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.source-primary .source-text {
+  color: var(--on-ink-2);
+}
+
+/* Сноска: короткая линейка над текстом, как в книге */
+.footnote {
+  position: relative;
+  margin-top: var(--s-8);
+  padding-top: var(--s-3);
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+}
+
+.footnote::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 72px;
+  border-top: 1px solid var(--ink-2);
+}
+
+/* --- Редактирование и удаление ------------------------------------------- */
+
+.meta {
+  margin-top: var(--s-5);
+  color: var(--ink-2);
+  font-size: var(--fs-small);
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: var(--scrim);
+}
+
+/* В приложении: <dialog> + showModal(), фон через ::backdrop */
+.sheet {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 4;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: var(--s-8) var(--margin) calc(var(--s-5) + env(safe-area-inset-bottom));
+  border: 0;
+  border-radius: var(--r-sheet) var(--r-sheet) 0 0;
+  background: var(--stock);
+  box-shadow: var(--shadow-sheet);
+  color: var(--ink);
+}
+
+.sheet::backdrop {
+  background: var(--scrim);
+}
+
+.sheet-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  text-wrap: balance;
+}
+
+.sheet-text {
+  margin: var(--s-3) 0 var(--s-6);
+  color: var(--ink-2);
+}
+
+.sheet-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+}
+
+/* --- Вход: титульный лист ------------------------------------------------ */
+
+.title-page {
+  display: grid;
+  justify-items: center;
+  margin-top: var(--s-12);
+  text-align: center;
+}
+
+.title-page .logo-mark {
+  width: 88px;
+  height: 88px;
+}
+
+.wordmark {
+  margin-top: var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-display);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
+
+.tagline {
+  margin-top: var(--s-3);
+  color: var(--ink-2);
+}
+
+.login-form {
+  margin-top: var(--s-12);
+}
+
+.login-form .notice {
+  margin-top: var(--s-5);
+}
+
+/* --- Логотип, встроенный в разметку: цвета из токенов -------------------- */
+
+.logo-body {
+  fill: var(--ink);
+}
+
+.logo-letter,
+.logo-snap {
+  fill: var(--paper);
+}
+
+.logo-clasp {
+  fill: var(--red);
+  stroke: var(--paper);
+  stroke-width: 2.5;
+}
+
+.logo-card-front {
+  fill: var(--stock);
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+
+.logo-card-back {
+  fill: var(--red);
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck-card {
+    transition: none;
+  }
+
+  .deck-card:active {
+    translate: none;
+  }
+}
+
+/* ==========================================================================
+   4. Правки поверх макета: то, чего у витрины не было
+   ========================================================================== */
+
+[hidden] {
+  display: none !important;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100%;
+}
+
+/* Экран приложения. На телефоне во всю ширину, на компьютере - колонкой по центру */
+.screen {
+  max-width: 480px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding-top: env(safe-area-inset-top);
+}
+
+a {
+  color: inherit;
+}
+
+/* Узор рубашки бледной полосой над колонтитулом: гильош, как на банкноте */
+:root {
+  --rubashka: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 12'%3E%3Cpath d='M0 -6C5 -9.7 10 -13 15 -13C20 -13 25 -9.7 30 -6C35 -2.3 40 1 45 1C50 1 55 -2.3 60 -6M0 0C5 -3.7 10 -7 15 -7C20 -7 25 -3.7 30 0C35 3.7 40 7 45 7C50 7 55 3.7 60 0M0 6C5 2.3 10 -1 15 -1C20 -1 25 2.3 30 6C35 9.7 40 13 45 13C50 13 55 9.7 60 6M0 12C5 8.3 10 5 15 5C20 5 25 8.3 30 12C35 15.7 40 19 45 19C50 19 55 15.7 60 12M0 18C5 14.3 10 11 15 11C20 11 25 14.3 30 18C35 21.7 40 25 45 25C50 25 55 21.7 60 18M0 -12.1C5 -10.2 10 -5.7 15 -2.5C20 0.7 25 1.9 30 0.1C35 -1.8 40 -6.3 45 -9.5C50 -12.7 55 -13.9 60 -12.1M0 -6.1C5 -4.2 10 0.3 15 3.5C20 6.7 25 7.9 30 6.1C35 4.2 40 -0.3 45 -3.5C50 -6.7 55 -7.9 60 -6.1M0 -0.1C5 1.8 10 6.3 15 9.5C20 12.7 25 13.9 30 12.1C35 10.2 40 5.7 45 2.5C50 -0.7 55 -1.9 60 -0.1M0 5.9C5 7.8 10 12.3 15 15.5C20 18.7 25 19.9 30 18.1C35 16.2 40 11.7 45 8.5C50 5.3 55 4.1 60 5.9M0 11.9C5 13.8 10 18.3 15 21.5C20 24.7 25 25.9 30 24.1C35 22.2 40 17.7 45 14.5C50 11.3 55 10.1 60 11.9M0 0.1C5 1.9 10 0.7 15 -2.5C20 -5.7 25 -10.2 30 -12.1C35 -13.9 40 -12.7 45 -9.5C50 -6.3 55 -1.8 60 0.1M0 6.1C5 7.9 10 6.7 15 3.5C20 0.3 25 -4.2 30 -6.1C35 -7.9 40 -6.7 45 -3.5C50 -0.3 55 4.2 60 6.1M0 12.1C5 13.9 10 12.7 15 9.5C20 6.3 25 1.8 30 -0.1C35 -1.9 40 -0.7 45 2.5C50 5.7 55 10.2 60 12.1M0 18.1C5 19.9 10 18.7 15 15.5C20 12.3 25 7.8 30 5.9C35 4.1 40 5.3 45 8.5C50 11.7 55 16.2 60 18.1M0 24.1C5 25.9 10 24.7 15 21.5C20 18.3 25 13.8 30 11.9C35 10.1 40 11.3 45 14.5C50 17.7 55 22.2 60 24.1' fill='none' stroke='black' stroke-width='0.45'/%3E%3C/svg%3E");
+  --ornament: rgb(29 43 69 / 0.4);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ornament: rgb(238 231 215 / 0.2);
+  }
+}
+
+.rubashka {
+  flex: none;
+  height: 10px;
+  background-color: var(--ornament);
+  -webkit-mask: var(--rubashka) 0 0 / 60px 12px repeat;
+  mask: var(--rubashka) 0 0 / 60px 12px repeat;
+}
+
+.brand .logo-mark,
+.title-page .logo-mark {
+  color: var(--ink);
+}
+
+/* Ячейки карты заданы явно: в первой строке название и время показа, во второй номер на всю ширину.
+   Без этого порядок элементов в разметке решает, куда что упадёт, и время уезжает под индекс */
+.deck-card-name {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.deck-card-used {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.deck-card-code {
+  grid-column: 2 / span 2;
+  grid-row: 2;
+}
+
+/* Перевёрнутый индекс в правом нижнем углу карты. От .pip ему достаётся grid-row: 1 / span 2,
+   а у абсолютно позиционированного элемента в grid содержащий блок - его grid-область, а не вся карта.
+   Без сброса «низ» индекса оказывается во второй строке, поверх времени показа */
+.pip-bottom {
+  grid-area: auto;
+}
+
+/* Сам перевёрнутый индекс есть только у последней видимой карты, остальные закрывает следующая.
+   Считаются только видимые: фильтр прячет лишние, и последней может стать любая */
+.deck-item:has(~ .deck-item:not([hidden])) .pip-bottom {
+  display: none;
+}
+
+.deck-empty {
+  margin-top: var(--s-6);
+  color: var(--ink-2);
+  text-align: center;
+}
+
+/* Выход: в самом низу списка, чтобы не нажать случайно */
+.signout {
+  margin-top: var(--s-10);
+  text-align: center;
+}
+
+.signout .btn-text {
+  color: var(--ink-2);
+}
+
+/* Экран кассы: белый в любой теме, синька только для подписей. Сам код - чёрный на белом */
+[data-page="card"] {
+  background: #FFFFFF;
+}
+
+[data-page="card"] .screen {
+  --ink: #1D2B45;
+  --ink-2: #55617A;
+  --red: #7B2333;
+  --red-wash: #F1E2DC;
+  --on-red: #FBF8F1;
+  --rule: #D6CFBF;
+  --paper: #FFFFFF;
+  color-scheme: light;
+  background: #FFFFFF;
+  color: var(--ink);
+}
+
+/* Экран кассы ровно по высоте окна: кнопки внизу видны всегда. Не влезло (маленький телефон,
+   длинная заметка) - прокручивается только середина, а не вся страница */
+[data-page="card"] .screen {
+  height: 100dvh;
+  min-height: 0;
+}
+
+.qr-main {
+  min-height: 0;
+  overflow-y: auto;
+  /* safe: если середина не влезла, её начало не уезжает за верхний край, куда не докрутить */
+  justify-content: safe center;
+  padding-bottom: var(--s-4);
+}
+
+/* картинка кода 720 точек, на экране меньше: без сглаживания модули остаются резкими.
+   Не больше 40% высоты экрана, чтобы на коротком телефоне влезли название и кнопки */
+.qr {
+  flex: none;
+  width: min(296px, 78vw, 40dvh);
+  height: auto;
+  aspect-ratio: 1;
+  image-rendering: pixelated;
+}
+
+/* длинное содержимое (ссылки, хэши) - две строки и многоточие: руками его на кассе никто не вбивает,
+   целиком оно видно в правке. Номер карты из цифр короткий и виден полностью */
+.qr-text {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.qr-note {
+  margin-top: var(--s-4);
+}
+
+/* Источник фото: форма вокруг label, чтобы у каждого файла была своя отправка */
+.sources form {
+  display: contents;
+}
+
+.source-submit {
+  margin-top: var(--s-2);
+}
+
+.manual {
+  margin-top: var(--s-4);
+}
+
+.field-error {
+  color: var(--red);
+  font-size: var(--fs-small);
+  font-weight: 400;
+}
+
+.page > .notice + .form,
+.page > .notice + .btn-text {
+  margin-top: var(--s-4);
+}
+
+/* Нижняя панель с несколькими кнопками: столбиком, главная сверху */
+.dock-stack {
+  display: grid;
+  gap: var(--s-3);
+}
+
+/* Подтверждение поверх экрана: окно по центру, страница под ним затемнена.
+   У окна нет своих отступов - они у .modal-body, поэтому нажатие на само окно - это нажатие на затемнение */
+.modal {
+  width: min(340px, calc(100vw - 2 * var(--margin)));
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sheet);
+  background: var(--paper);
+  box-shadow: 0 24px 48px -16px rgb(5 8 15 / 0.45);
+  color: var(--ink);
+}
+
+.modal::backdrop {
+  /* ::backdrop не везде наследует переменные от окна, поэтому цвет записан как есть */
+  background: rgb(20 28 46 / 0.55);
+}
+
+.modal-body {
+  padding: var(--s-6) var(--s-5) var(--s-5);
+  text-align: center;
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-name);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  text-wrap: balance;
+}
+
+.modal-text {
+  margin: var(--s-3) 0 var(--s-6);
+  color: var(--ink-2);
+  font-size: var(--fs-small);
+  text-wrap: balance;
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+}
+
+.modal-actions form {
+  display: contents;
+}
+
+/* Подтверждение удаления без js - отдельная страница в виде нижнего листа: работает без js */
+.confirm {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.confirm .sheet {
+  position: static;
+}
+
+.sheet-actions form {
+  display: contents;
+}

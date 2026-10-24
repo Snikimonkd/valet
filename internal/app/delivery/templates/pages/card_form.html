@@ -1,0 +1,63 @@
+{{define "content"}}
+{{template "rubashka"}}
+{{with .Page}}
+{{$form := .}}
+<header class="bar">
+  {{if .ID}}
+  <a class="bar-back" href="/cards/{{.ID}}"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>Назад</a>
+  <h1 class="runhead">Изменить карту</h1>
+  <span></span>
+  {{else}}
+  <a class="bar-back" href="/cards/new"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>Назад</a>
+  <h1 class="runhead">Новая карта</h1>
+  <span class="folio">шаг 2 из 2</span>
+  {{end}}
+</header>
+<div class="rule-oxford"></div>
+<main class="page">
+  {{if .Scanned}}<p class="notice notice-ok" role="status"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>QR-код распознан</p>{{end}}
+  {{if .ScanFailed}}
+  <p class="notice notice-error" id="f-scan-err" role="alert"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>QR не распознан — введи содержимое вручную</p>
+  <a class="btn-text" href="/cards/new">Выбрать другое фото</a>
+  {{end}}
+  <form class="form" id="card-form" method="post" action="{{.Action}}">
+    <div class="field">
+      <label class="field-label" for="f-name">Название</label>
+      <input class="field-input" id="f-name" name="name" value="{{.Name}}" placeholder="Например, Пятёрочка" maxlength="100"
+        required autocomplete="off"
+        {{- if not .Name}} autofocus{{end}}
+        {{- with .Errors.Name}} aria-invalid="true" aria-describedby="f-name-msg"{{end}}>
+      {{with .Errors.Name}}<p class="field-error" id="f-name-msg">{{.}}</p>{{end}}
+    </div>
+    <div class="field">
+      <label class="field-label" for="f-content">Содержимое QR-кода</label>
+      <textarea class="field-input num" id="f-content" name="content" rows="2" placeholder="Номер карты или текст из QR-кода"
+        required autocomplete="off" spellcheck="false" aria-describedby="f-content-msg"
+        {{- if .Errors.Content}} aria-invalid="true"{{end}}>{{.Content}}</textarea>
+      {{- with .Errors.Content}}
+      <p class="field-error" id="f-content-msg">{{.}}{{with $form.Existing}}: <a href="/cards/{{.ID}}">«{{.Name}}»</a>{{end}}</p>
+      {{- else}}
+      <p class="field-hint" id="f-content-msg">
+        {{- if .Scanned}}Распознано с фото. Если нужно, поправь вручную.
+        {{- else if .ID}}Это видит сканер на кассе.
+        {{- else}}Обычно это номер, напечатанный на карте под кодом.{{end -}}
+      </p>
+      {{- end}}
+    </div>
+    <div class="field">
+      <label class="field-label" for="f-note">Заметка <span class="optional">необязательно</span></label>
+      <input class="field-input num" id="f-note" name="note" value="{{.Note}}" placeholder="Например, PIN 4417" maxlength="500"
+        autocomplete="off"
+        {{- with .Errors.Note}} aria-invalid="true" aria-describedby="f-note-msg"{{end}}>
+      {{with .Errors.Note}}<p class="field-error" id="f-note-msg">{{.}}</p>{{end}}
+    </div>
+  </form>
+  {{if .ID}}
+  <p class="meta">Последний показ: {{.Used}}</p>
+  {{end}}
+</main>
+<div class="dock">
+  <button class="btn btn-primary" type="submit" form="card-form">Сохранить</button>
+</div>
+{{end}}
+{{end}}

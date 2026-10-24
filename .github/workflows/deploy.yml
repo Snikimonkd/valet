@@ -1,0 +1,57 @@
+name: deploy
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'image tag (e.g. latest, 1.2.3, sha-<commit>)'
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'image tag (e.g. latest, 1.2.3, sha-<commit>)'
+        type: string
+        required: true
+        default: latest
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency: production
+    env:
+      SSH_TARGET: ${{ vars.SSH_USER }}@${{ vars.SSH_HOST }}
+      IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/valet:${{ inputs.tag }}
+    steps:
+      - name: set up ssh
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519
+
+      - name: deploy
+        env:
+          PG_DSN: ${{ secrets.PG_DSN }}
+          DOMAIN: ${{ vars.DOMAIN }}
+        run: |
+          {
+            printf 'export IMAGE=%q PG_DSN=%q DOMAIN=%q\n' "$IMAGE" "$PG_DSN" "$DOMAIN"
+            cat <<'SCRIPT'
+          set -euo pipefail
+
+          docker pull "$IMAGE"
+          docker rm -f valet 2>/dev/null || true
+          docker run -d \
+            --name valet \
+            --restart unless-stopped \
+            --network host \
+            -e PG_DSN \
+            -e DOMAIN \
+            "$IMAGE"
+          docker image prune -f
+          SCRIPT
+          } | ssh "$SSH_TARGET" bash -s

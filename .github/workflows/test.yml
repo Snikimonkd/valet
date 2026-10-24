@@ -1,0 +1,37 @@
+name: tests
+
+on:
+  workflow_call:
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: valet
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: install migration tool
+        run: GOBIN=$PWD/bin go install github.com/pressly/goose/v3/cmd/goose@v3.29.0
+
+      - name: run migrations
+        run: make migrate-up
+
+      - name: run tests
+        run: make test-cov

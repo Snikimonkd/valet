@@ -1,0 +1,62 @@
+version: "2"
+run:
+  concurrency: 8
+  issues-exit-code: 1
+  tests: true
+linters:
+  default: all
+  disable:
+    - containedctx
+    - depguard
+    - dupl
+    - err113
+    - exhaustruct
+    - exhaustruct_v5
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - godoclint
+    - godot
+    - gomodguard
+    - ireturn
+    - mnd
+    - nilerr
+    - nlreturn
+    - nolintlint
+    - perfsprint
+    - testpackage
+    - unqueryvet
+    - varnamelen
+    - wrapcheck
+    - wsl
+    - wsl_v5
+  settings:
+    revive:
+      rules:
+        - name: var-naming
+          arguments:
+            - - ID
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      # табличные тесты ветвистые и повторяют строки по природе, а куки и числа в них - не данные пользователей
+      - path: _test\.go$
+        linters:
+          - cyclop
+          - goconst
+          - gosec
+      - path: (.+)\.go$
+        text: exported func .* returns unexported type .*, which can be annoying to use
+      - path: (.+)\.go$
+        text: should omit type .* from declaration of var .*; it will be inferred from the right-hand side
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax

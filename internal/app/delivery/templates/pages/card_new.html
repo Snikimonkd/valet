@@ -1,0 +1,42 @@
+{{define "content"}}
+{{template "rubashka"}}
+<header class="bar">
+  <a class="bar-back" href="/"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>Колода</a>
+  <h1 class="runhead">Новая карта</h1>
+  <span class="folio">шаг 1 из 2</span>
+</header>
+<div class="rule-oxford"></div>
+{{with .Page}}
+<main class="page">
+  {{with .Error}}<p class="notice notice-error" role="alert"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>{{.}}</p>{{end}}
+  {{/* у каждого файла своя форма: выбор файла сразу отправляет её (app.js), htmx подменяет экран формой карты.
+       Кнопка «Распознать» - для браузеров без js, app.js её прячет */}}
+  <div class="sources">
+    <form method="post" action="/cards/scan" enctype="multipart/form-data" hx-post="/cards/scan" hx-target="#main" hx-swap="innerHTML">
+      <label class="source source-primary">
+        <input type="file" name="image" accept="image/*" capture="environment" data-autosubmit>
+        <svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg>
+        <span>
+          <span class="source-title">Сфоткать</span>
+          <span class="source-text">Откроется камера. Наведи её на QR-код на карте.</span>
+        </span>
+      </label>
+      <button class="btn btn-secondary source-submit" type="submit" data-autosubmit-button>Распознать</button>
+    </form>
+    <form method="post" action="/cards/scan" enctype="multipart/form-data" hx-post="/cards/scan" hx-target="#main" hx-swap="innerHTML">
+      <label class="source">
+        <input type="file" name="image" accept="image/*" data-autosubmit>
+        <svg class="icon" aria-hidden="true"><use href="#i-screenshot"/></svg>
+        <span>
+          <span class="source-title">Загрузить скриншот</span>
+          <span class="source-text">Из галереи: скриншот карты в приложении магазина.</span>
+        </span>
+      </label>
+      <button class="btn btn-secondary source-submit" type="submit" data-autosubmit-button>Распознать</button>
+    </form>
+  </div>
+  <p class="manual"><a class="btn-text" href="/cards/new/manual">Ввести вручную</a></p>
+  <p class="footnote">Фото не сохраняется. Из него берётся только содержимое QR-кода.</p>
+</main>
+{{end}}
+{{end}}
