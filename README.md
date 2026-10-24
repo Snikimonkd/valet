@@ -36,11 +36,11 @@ PWA на Go + htmx: сервер рендерит html, база — PostgreSQL,
 make bin-deps          # jet, goose, golangci-lint в ./bin
 make postgres-up       # postgres 17 в докере, база valet
 make migrate-up
-make run               # http://localhost:8000
+make run               # http://localhost:8001
 ```
 
 Кука входа помечена `Secure`, браузеры принимают её по http только на `localhost`, поэтому открывайте
-`http://localhost:8000`, а не `127.0.0.1`.
+`http://localhost:8001`, а не `127.0.0.1`.
 
 Тесты (нужен postgres с накатанными миграциями):
 
@@ -59,7 +59,7 @@ id пользователя — UUID версии 7, его генерирует
 
 ## Прод
 
-VPS с docker, postgres и Caddy. Caddy выпускает TLS-сертификат и проксирует на `127.0.0.1:8000`,
+VPS с docker, postgres и Caddy. Caddy выпускает TLS-сертификат и проксирует на `127.0.0.1:8001`,
 пример — `Caddyfile.example`. PWA без https не работает: service worker и камера требуют защищённого соединения.
 
 Пуш в `main` запускает `.github/workflows/pipeline.yml`: тесты и линтер → образ в Docker Hub →
