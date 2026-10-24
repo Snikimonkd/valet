@@ -412,6 +412,10 @@ func TestCardPage(t *testing.T) {
 			if !strings.Contains(rec.Body.String(), "/cards/3/qr.png?v=") {
 				t.Error("card page has no qr image")
 			}
+			// экран кассы в цветах темы, как остальные: цвет полосы браузера ставит theme.js
+			if !strings.Contains(rec.Body.String(), `<meta name="theme-color" content="#F3EDDF" data-theme-color>`) {
+				t.Error("card page theme-color must follow the theme")
+			}
 		})
 	}
 }
