@@ -120,6 +120,44 @@ func (c *MockRepositoryCreateSessionCall) DoAndReturn(f func(context.Context, mo
 	return c
 }
 
+// CreateUser mocks base method.
+func (m *MockRepository) CreateUser(ctx context.Context, user model.Users) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateUser", ctx, user)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateUser indicates an expected call of CreateUser.
+func (mr *MockRepositoryMockRecorder) CreateUser(ctx, user any) *MockRepositoryCreateUserCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockRepository)(nil).CreateUser), ctx, user)
+	return &MockRepositoryCreateUserCall{Call: call}
+}
+
+// MockRepositoryCreateUserCall wrap *gomock.Call
+type MockRepositoryCreateUserCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockRepositoryCreateUserCall) Return(arg0 error) *MockRepositoryCreateUserCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockRepositoryCreateUserCall) Do(f func(context.Context, model.Users) error) *MockRepositoryCreateUserCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockRepositoryCreateUserCall) DoAndReturn(f func(context.Context, model.Users) error) *MockRepositoryCreateUserCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // DeleteCard mocks base method.
 func (m *MockRepository) DeleteCard(ctx context.Context, userID uuid.UUID, cardID int64) error {
 	m.ctrl.T.Helper()

@@ -43,6 +43,8 @@
 <p class="notice notice-offline" role="status" data-relogin-banner hidden><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg><span>Сессия закончилась — это сохранённые карты. <a href="/login">Войти</a></span></p>
 {{end}}
 
-{{/* Угловой индекс карты: буква магазина и масть столбиком. Ожидает delivery.cardView */}}
+{{/* Угловые индексы карты: буква магазина и масть столбиком, слева и справа сверху - как в колоде
+     с индексами во всех углах. Сверху, потому что у закрытых карт в колоде видна только верхняя полоса.
+     Ожидает delivery.cardView */}}
 {{define "pip"}}<span class="pip" aria-hidden="true"><span class="pip-letter">{{.Index}}</span><svg class="pip-suit"><use href="#suit-{{.Suit}}"/></svg></span>{{end}}
-{{define "pip_bottom"}}<span class="pip pip-bottom" aria-hidden="true"><span class="pip-letter">{{.Index}}</span><svg class="pip-suit"><use href="#suit-{{.Suit}}"/></svg></span>{{end}}
+{{define "pip_end"}}<span class="pip pip-end" aria-hidden="true"><span class="pip-letter">{{.Index}}</span><svg class="pip-suit"><use href="#suit-{{.Suit}}"/></svg></span>{{end}}

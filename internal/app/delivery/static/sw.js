@@ -41,27 +41,43 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(logout(req));
     return;
   }
-  if (req.method !== "GET") return;
 
-  if (url.pathname.startsWith("/static/")) {
-    event.respondWith(cacheFirst(STATIC, req));
-    return;
+  if (req.method === "GET") {
+    if (url.pathname.startsWith("/static/")) {
+      event.respondWith(cacheFirst(STATIC, req));
+      return;
+    }
+    if (qrImage.test(url.pathname)) {
+      event.respondWith(cacheFirst(CARDS, req));
+      return;
+    }
+    if (offlinePage.test(url.pathname)) {
+      event.respondWith(networkFirst(req));
+      return;
+    }
   }
-  if (qrImage.test(url.pathname)) {
-    event.respondWith(cacheFirst(CARDS, req));
-    return;
+
+  // остальные переходы (формы, правка, вход) - в сеть. Без сети вместо ошибки браузера - страничка
+  // «Нет сети» со ссылкой на колоду: кнопки, которым нужна сеть, app.js и так выключает, это страховка
+  if (req.mode === "navigate") {
+    event.respondWith(fetch(req).catch(offlineStub));
   }
-  if (offlinePage.test(url.pathname)) {
-    event.respondWith(networkFirst(req));
-  }
-  // остальное (вход, формы, /ping) идёт в сеть как обычно
+  // остальное (/ping, запросы htmx) идёт в сеть как обычно
 });
 
 // logout - выход: после него карт на телефоне остаться не должно. Удаляется только кэш карт,
-// статика остаётся, поэтому выход мгновенный и следующая страница не перекачивает шрифты
+// статика остаётся, поэтому выход мгновенный и следующая страница не перекачивает шрифты.
+// Кэш стирается после ответа сервера: без сети выход не случится, и карты должны остаться на месте
 async function logout(req) {
+  let res;
+  try {
+    res = await fetch(req);
+  } catch {
+    return offlineStub();
+  }
+
   await caches.delete(CARDS);
-  return fetch(req);
+  return res;
 }
 
 // cacheFirst - из кэша name, а если там нет - из сети с сохранением в него.

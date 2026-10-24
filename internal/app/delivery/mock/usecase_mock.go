@@ -393,6 +393,45 @@ func (c *MockUsecaseOpenCardCall) DoAndReturn(f func(context.Context, uuid.UUID,
 	return c
 }
 
+// Register mocks base method.
+func (m *MockUsecase) Register(ctx context.Context, in usecase.RegisterInput) (usecase.Session, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Register", ctx, in)
+	ret0, _ := ret[0].(usecase.Session)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Register indicates an expected call of Register.
+func (mr *MockUsecaseMockRecorder) Register(ctx, in any) *MockUsecaseRegisterCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockUsecase)(nil).Register), ctx, in)
+	return &MockUsecaseRegisterCall{Call: call}
+}
+
+// MockUsecaseRegisterCall wrap *gomock.Call
+type MockUsecaseRegisterCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockUsecaseRegisterCall) Return(arg0 usecase.Session, arg1 error) *MockUsecaseRegisterCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockUsecaseRegisterCall) Do(f func(context.Context, usecase.RegisterInput) (usecase.Session, error)) *MockUsecaseRegisterCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockUsecaseRegisterCall) DoAndReturn(f func(context.Context, usecase.RegisterInput) (usecase.Session, error)) *MockUsecaseRegisterCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // ScanQR mocks base method.
 func (m *MockUsecase) ScanQR(ctx context.Context, r io.Reader) (string, error) {
 	m.ctrl.T.Helper()

@@ -256,8 +256,12 @@ p {
   padding: var(--s-4) var(--margin) var(--s-5);
 }
 
-/* Нижняя панель с главным действием */
+/* Нижняя панель с главным действием. Прилипает к низу экрана: в длинной колоде «Добавить карту»
+   видна всегда, а в конце списка панель встаёт на своё место и последнюю карту не закрывает */
 .dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
   flex: none;
   padding: var(--s-3) var(--margin) calc(var(--s-3) + env(safe-area-inset-bottom));
   border-top: 1px solid var(--rule);
@@ -477,12 +481,12 @@ textarea.field-input {
   --suit: var(--ink);
   position: relative;
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
   grid-template-rows: 30px 18px;
   align-content: start;
   column-gap: 14px;
   height: var(--card-h);
-  padding: 10px 16px 0 12px;
+  padding: 10px 12px 0 12px; /* поровну слева и справа: индексы стоят зеркально */
   border: 1px solid var(--card-line);
   border-radius: var(--r-card);
   background: var(--stock);
@@ -518,15 +522,7 @@ textarea.field-input {
   text-overflow: ellipsis;
 }
 
-.deck-card-used {
-  align-self: center;
-  color: var(--ink-2);
-  font-size: var(--fs-caption);
-  font-variant-numeric: tabular-nums;
-}
-
 .deck-card-code {
-  grid-column: 2 / span 2;
   overflow: hidden;
   color: var(--ink-2);
   font-size: 0.8125rem;
@@ -559,13 +555,6 @@ textarea.field-input {
   width: 14px;
   height: 14px;
   fill: currentColor;
-}
-
-.pip-bottom {
-  position: absolute;
-  right: 12px;
-  bottom: 8px;
-  rotate: 180deg;
 }
 
 /* Пустая колода: место под карту размером ID-1, отмеченное метками обреза */
@@ -763,11 +752,6 @@ textarea.field-input {
 
 /* --- Редактирование и удаление ------------------------------------------- */
 
-.meta {
-  margin-top: var(--s-5);
-  color: var(--ink-2);
-  font-size: var(--fs-small);
-}
 
 .scrim {
   position: absolute;
@@ -845,6 +829,24 @@ textarea.field-input {
 
 .login-form {
   margin-top: var(--s-12);
+}
+
+/* на регистрации полей больше: шапка ниже, чтобы форма с кнопкой влезла на экран */
+.title-page-compact {
+  margin-top: var(--s-6);
+}
+
+.title-page-compact .logo-mark {
+  width: 56px;
+  height: 56px;
+}
+
+.title-page-compact .wordmark {
+  font-size: var(--fs-title);
+}
+
+.title-page-compact + .login-form {
+  margin-top: var(--s-8);
 }
 
 .login-form .notice {
@@ -943,34 +945,25 @@ a {
   color: var(--ink);
 }
 
-/* Ячейки карты заданы явно: в первой строке название и время показа, во второй номер на всю ширину.
-   Без этого порядок элементов в разметке решает, куда что упадёт, и время уезжает под индекс */
+/* Ячейки карты заданы явно: название и номер в средней колонке, индексы по краям на обе строки */
 .deck-card-name {
   grid-column: 2;
   grid-row: 1;
 }
 
-.deck-card-used {
-  grid-column: 3;
-  grid-row: 1;
-}
 
 .deck-card-code {
-  grid-column: 2 / span 2;
+  grid-column: 2;
   grid-row: 2;
 }
 
-/* Перевёрнутый индекс в правом нижнем углу карты. От .pip ему достаётся grid-row: 1 / span 2,
-   а у абсолютно позиционированного элемента в grid содержащий блок - его grid-область, а не вся карта.
-   Без сброса «низ» индекса оказывается во второй строке, поверх времени показа */
-.pip-bottom {
-  grid-area: auto;
+/* Индексы по краям: левый в первой колонке, правый в последней, оба на две строки */
+.pip {
+  grid-column: 1;
 }
 
-/* Сам перевёрнутый индекс есть только у последней видимой карты, остальные закрывает следующая.
-   Считаются только видимые: фильтр прячет лишние, и последней может стать любая */
-.deck-item:has(~ .deck-item:not([hidden])) .pip-bottom {
-  display: none;
+.pip-end {
+  grid-column: 3;
 }
 
 .deck-empty {
@@ -979,14 +972,21 @@ a {
   text-align: center;
 }
 
-/* Выход: в самом низу списка, чтобы не нажать случайно */
-.signout {
-  margin-top: var(--s-10);
-  text-align: center;
+/* Кнопка в колонтитуле выглядит как ссылка рядом: «Выйти» справа от «Колоды» */
+button.bar-action {
+  border: 0;
+  background: none;
+  cursor: pointer;
 }
 
-.signout .btn-text {
-  color: var(--ink-2);
+/* без сети кнопки, которым она нужна, серые и не нажимаются, см. setOnline в app.js */
+.bar-action[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn[aria-disabled="true"] {
+  pointer-events: none;
 }
 
 /* Экран кассы: белый в любой теме, синька только для подписей. Сам код - чёрный на белом */
@@ -1070,7 +1070,8 @@ a {
   margin-top: var(--s-4);
 }
 
-/* Нижняя панель с несколькими кнопками: столбиком, главная сверху */
+/* Несколько кнопок столбиком, главная сверху: в нижней панели и под формой входа */
+.form-actions-stack,
 .dock-stack {
   display: grid;
   gap: var(--s-3);

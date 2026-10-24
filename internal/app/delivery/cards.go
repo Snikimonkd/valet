@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"hash/fnv"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 	"unicode"
 
 	"github.com/go-chi/chi/v5"
@@ -27,10 +27,6 @@ const prefetchHeader = "X-Valet-Prefetch"
 // Значение - имя рисунка в спрайте (partials.html): символы ♠♥ телефон может подменить эмодзи
 var suits = [...]string{"spade", "heart", "diamond", "club"}
 
-// locMsk - московское время для подписей «09:12», «вчера». Летнего времени в Москве нет,
-// поэтому хватает постоянного сдвига и не нужна база часовых поясов в образе
-var locMsk = time.FixedZone("MSK", 3*60*60)
-
 // cardView - карта для шаблонов
 type cardView struct {
 	ID      int64
@@ -43,15 +39,11 @@ type cardView struct {
 	Suit string
 	// Code - содержимое для подписи: номер из цифр группами по четыре, остальное как есть
 	Code string
-	// Used - когда карту показывали: «09:12» сегодня, «вчера», «21.10». У ни разу не открытой - «новая»
-	Used string
-	// UsedAt - то же время для атрибута datetime
-	UsedAt time.Time
 	// QRURL - адрес картинки с кодом. Версия в адресе меняется при правке карты, поэтому картинку можно кэшировать
 	QRURL string
 }
 
-func newCardView(c model.Cards, now time.Time) cardView {
+func newCardView(c model.Cards) cardView {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(c.Name))
 
@@ -63,8 +55,6 @@ func newCardView(c model.Cards, now time.Time) cardView {
 		Index:   cardIndex(c.Name),
 		Suit:    suits[h.Sum32()%uint32(len(suits))],
 		Code:    cardCode(c.Content),
-		Used:    usedLabel(c, now),
-		UsedAt:  c.LastUsedAt,
 		QRURL:   fmt.Sprintf("/cards/%d/qr.png?v=%d", c.ID, c.UpdatedAt.UnixMilli()),
 	}
 }
@@ -111,62 +101,8 @@ func cardCode(content string) string {
 	return b.String()
 }
 
-// usedLabel - когда карту последний раз показывали, коротко для списка. Только что созданную
-// ещё не показывали: у неё время показа равно времени создания
-func usedLabel(c model.Cards, now time.Time) string {
-	if c.LastUsedAt.Equal(c.CreatedAt) {
-		return "новая"
-	}
-
-	used, now := c.LastUsedAt.In(locMsk), now.In(locMsk)
-	day := func(t time.Time) time.Time { return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, locMsk) }
-	days := int(day(now).Sub(day(used)) / (24 * time.Hour))
-	switch days {
-	case 0:
-		return used.Format("15:04")
-	case 1:
-		return "вчера"
-	default:
-		return used.Format("02.01")
-	}
-}
-
-// usedText - то же для страницы правки: «сегодня в 09:12», «вчера в 18:40», «21.10 в 12:00»
-func usedText(c model.Cards, now time.Time) string {
-	label := usedLabel(c, now)
-	if label == "новая" {
-		return "ещё не показывали"
-	}
-
-	at := c.LastUsedAt.In(locMsk).Format("15:04")
-	switch label {
-	case at:
-		return "сегодня в " + at
-	case "вчера":
-		return "вчера в " + at
-	default:
-		return label + " в " + at
-	}
-}
-
-// cardsCount - «1 карта», «3 карты», «7 карт»
-func cardsCount(n int) string {
-	word := "карт"
-	switch {
-	case n%100 >= 11 && n%100 <= 14:
-	case n%10 == 1:
-		word = "карта"
-	case n%10 >= 2 && n%10 <= 4:
-		word = "карты"
-	}
-
-	return strconv.Itoa(n) + " " + word
-}
-
 type cardsView struct {
 	Cards []cardView
-	// Count - сколько карт в колоде, для колонцифры
-	Count string
 }
 
 func (wb *delivery) cardsPage(w http.ResponseWriter, r *http.Request) {
@@ -176,10 +112,9 @@ func (wb *delivery) cardsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	now := time.Now()
-	view := cardsView{Cards: make([]cardView, 0, len(cards)), Count: cardsCount(len(cards))}
+	view := cardsView{Cards: make([]cardView, 0, len(cards))}
 	for _, c := range cards {
-		view.Cards = append(view.Cards, newCardView(c, now))
+		view.Cards = append(view.Cards, newCardView(c))
 	}
 
 	wb.renderPage(w, r, http.StatusOK, pageCards, view)
@@ -241,7 +176,7 @@ func (wb *delivery) cardPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wb.renderPage(w, r, http.StatusOK, pageCard, newCardView(card, time.Now()))
+	wb.renderPage(w, r, http.StatusOK, pageCard, newCardView(card))
 }
 
 func (wb *delivery) cardQR(w http.ResponseWriter, r *http.Request) {
@@ -278,9 +213,7 @@ type cardFormView struct {
 	Scanned bool
 	// ScanFailed - на картинке не нашлось кода, содержимое вводят руками
 	ScanFailed bool
-	// Used - когда карту последний раз показывали, только у существующей
-	Used   string
-	Errors map[string]string
+	Errors     map[string]string
 	// Existing - карта с таким же содержимым, которая уже есть в колоде: на неё ведёт ссылка в ошибке
 	Existing *cardRef
 }
@@ -364,6 +297,7 @@ func (wb *delivery) scanCard(w http.ResponseWriter, r *http.Request) {
 
 	file, _, err := r.FormFile("image")
 	if err != nil {
+		slog.WarnContext(r.Context(), "can't read uploaded image", "err", err, "request_id", requestID(r))
 		msg := "Не получилось загрузить картинку, попробуйте ещё раз"
 		if _, tooBig := errors.AsType[*http.MaxBytesError](err); tooBig {
 			msg = "Картинка больше 10 МБ, нужна поменьше"
@@ -373,12 +307,15 @@ func (wb *delivery) scanCard(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	// пользователю - понятное сообщение, в лог - причина: по ней видно, почему не читается конкретный скриншот
 	content, err := wb.usecase.ScanQR(r.Context(), file)
 	switch {
 	case errors.Is(err, usecase.ErrBadImage):
+		slog.WarnContext(r.Context(), "uploaded file is not a supported image", "err", err, "request_id", requestID(r))
 		view := cardNewView{Error: "Это не похоже на фото или скриншот: нужна картинка JPEG или PNG"}
 		wb.renderContent(w, r, http.StatusUnprocessableEntity, pageCardNew, view)
 	case errors.Is(err, usecase.ErrQRNotFound):
+		slog.InfoContext(r.Context(), "qr code not found on uploaded image", "err", err, "request_id", requestID(r))
 		wb.renderContent(w, r, http.StatusOK, pageCardForm, cardFormView{ScanFailed: true})
 	case err != nil:
 		wb.serverError(w, r, err)
@@ -415,7 +352,6 @@ func (wb *delivery) editCardPage(w http.ResponseWriter, r *http.Request) {
 		Name:    card.Name,
 		Content: card.Content,
 		Note:    card.Note,
-		Used:    usedText(card, time.Now()),
 	})
 }
 
@@ -452,7 +388,7 @@ func (wb *delivery) deleteCardPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wb.renderPage(w, r, http.StatusOK, pageCardDelete, newCardView(card, time.Now()))
+	wb.renderPage(w, r, http.StatusOK, pageCardDelete, newCardView(card))
 }
 
 func (wb *delivery) deleteCard(w http.ResponseWriter, r *http.Request) {

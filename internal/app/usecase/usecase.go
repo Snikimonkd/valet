@@ -11,6 +11,7 @@ import (
 //go:generate go tool mockgen -typed -destination=mock/repository_mock.go -package=mock . Repository
 type Repository interface {
 	LoginRepository
+	RegisterRepository
 	SessionRepository
 	CardsRepository
 }

@@ -5,6 +5,7 @@ type page string
 
 const (
 	pageLogin      page = "login"
+	pageRegister   page = "register"
 	pageCards      page = "cards"
 	pageCard       page = "card"
 	pageCardNew    page = "card_new"
@@ -13,7 +14,7 @@ const (
 )
 
 // allPages - все страницы. parsePages проверяет, что у каждой есть шаблон и что лишних шаблонов нет
-var allPages = []page{pageLogin, pageCards, pageCard, pageCardNew, pageCardForm, pageCardDelete}
+var allPages = []page{pageLogin, pageRegister, pageCards, pageCard, pageCardNew, pageCardForm, pageCardDelete}
 
 func (p page) templatePath() string {
 	return "templates/pages/" + string(p) + ".html"
@@ -24,6 +25,7 @@ type pageTitle string
 
 const (
 	titleLogin      pageTitle = "Вход"
+	titleRegister   pageTitle = "Регистрация"
 	titleCards      pageTitle = "Карты"
 	titleCard       pageTitle = "Карта"
 	titleCardNew    pageTitle = "Новая карта"
@@ -36,6 +38,8 @@ func (p page) title() pageTitle {
 	switch p {
 	case pageLogin:
 		return titleLogin
+	case pageRegister:
+		return titleRegister
 	case pageCards:
 		return titleCards
 	case pageCard:

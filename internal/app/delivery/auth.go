@@ -63,14 +63,21 @@ type loginView struct {
 	Error string
 }
 
-func (wb *delivery) loginPage(w http.ResponseWriter, r *http.Request) {
+// loggedIn - у запроса живая сессия. Страницы входа и регистрации тогда сразу отправляют в колоду
+func (wb *delivery) loggedIn(r *http.Request) bool {
 	cookie, err := r.Cookie(sessionCookie)
-	if err == nil {
-		_, err = wb.usecase.Authenticate(r.Context(), cookie.Value)
-		if err == nil {
-			redirect(w, r, "/")
-			return
-		}
+	if err != nil {
+		return false
+	}
+	_, err = wb.usecase.Authenticate(r.Context(), cookie.Value)
+
+	return err == nil
+}
+
+func (wb *delivery) loginPage(w http.ResponseWriter, r *http.Request) {
+	if wb.loggedIn(r) {
+		redirect(w, r, "/")
+		return
 	}
 
 	wb.renderPage(w, r, http.StatusOK, pageLogin, loginView{})
@@ -92,6 +99,63 @@ func (wb *delivery) login(w http.ResponseWriter, r *http.Request) {
 	if errors.Is(err, usecase.ErrWrongPassword) {
 		view.Error = "Неверный логин или пароль"
 		wb.renderPage(w, r, http.StatusUnprocessableEntity, pageLogin, view)
+		return
+	}
+	if err != nil {
+		wb.serverError(w, r, err)
+		return
+	}
+
+	http.SetCookie(w, wb.newSessionCookie(session.Token, session.ExpiresAt))
+	redirect(w, r, "/")
+}
+
+type registerView struct {
+	Login  string
+	Errors map[string]string
+}
+
+// registerMessages - подсказки у полей регистрации на нарушенные правила usecase
+var registerMessages = ruleMessages{
+	usecase.FieldLogin: {
+		usecase.ErrRequired:   "Придумайте логин",
+		usecase.ErrTooShort:   "Логин - от 3 символов",
+		usecase.ErrTooLong:    "Логин - не длиннее 32 символов",
+		usecase.ErrBadLogin:   "Только буквы, цифры, точка, дефис и подчёркивание",
+		usecase.ErrLoginTaken: "Такой логин уже занят",
+	},
+	usecase.FieldPassword: {
+		usecase.ErrRequired: "Придумайте пароль",
+		usecase.ErrTooShort: "Пароль - от 8 символов",
+		usecase.ErrTooLong:  "Слишком длинный пароль",
+	},
+	usecase.FieldPasswordConfirm: {
+		usecase.ErrPasswordMismatch: "Пароли не совпадают",
+	},
+}
+
+func (wb *delivery) registerPage(w http.ResponseWriter, r *http.Request) {
+	if wb.loggedIn(r) {
+		redirect(w, r, "/")
+		return
+	}
+
+	wb.renderPage(w, r, http.StatusOK, pageRegister, registerView{})
+}
+
+// register - заводит пользователя и сразу пускает его в колоду
+func (wb *delivery) register(w http.ResponseWriter, r *http.Request) {
+	in := usecase.RegisterInput{
+		Login:           r.PostFormValue("login"),
+		Password:        r.PostFormValue("password"),
+		PasswordConfirm: r.PostFormValue("password_confirm"),
+	}
+
+	session, err := wb.usecase.Register(r.Context(), in)
+	if invalid, ok := errors.AsType[usecase.ValidationError](err); ok {
+		// пароль в форму не возвращаем: его заново вводят оба раза
+		view := registerView{Login: strings.TrimSpace(in.Login), Errors: registerMessages.messages(invalid)}
+		wb.renderPage(w, r, http.StatusUnprocessableEntity, pageRegister, view)
 		return
 	}
 	if err != nil {

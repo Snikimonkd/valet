@@ -201,6 +201,83 @@ func TestLogin(t *testing.T) {
 	}
 }
 
+func TestRegister(t *testing.T) {
+	t.Parallel()
+
+	expires := testNow.Add(90 * 24 * time.Hour)
+	form := url.Values{"login": {" Sasha "}, "password": {"secret-pw"}, "password_confirm": {"secret-pw"}}
+	in := usecase.RegisterInput{Login: " Sasha ", Password: "secret-pw", PasswordConfirm: "secret-pw"}
+
+	t.Run("ok", func(t *testing.T) {
+		t.Parallel()
+
+		uc := mockUsecase(t)
+		uc.EXPECT().Register(gomock.Any(), in).
+			Return(usecase.Session{Token: testToken, UserID: testUserID, ExpiresAt: expires}, nil)
+		wb := newTestDelivery(t, uc)
+
+		rec := do(t, wb, http.MethodPost, "/register", form, false)
+		if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/" {
+			t.Fatalf("status = %d, Location = %q", rec.Code, rec.Header().Get("Location"))
+		}
+		// после регистрации сразу вошли
+		cookies := rec.Result().Cookies()
+		if len(cookies) != 1 || cookies[0].Value != testToken || !cookies[0].Expires.Equal(expires) {
+			t.Errorf("cookies = %+v", cookies)
+		}
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		t.Parallel()
+
+		uc := mockUsecase(t)
+		invalid := usecase.ValidationError{usecase.FieldLogin: usecase.ErrLoginTaken}
+		uc.EXPECT().Register(gomock.Any(), in).Return(usecase.Session{}, invalid)
+		wb := newTestDelivery(t, uc)
+
+		rec := do(t, wb, http.MethodPost, "/register", form, false)
+		if rec.Code != http.StatusUnprocessableEntity {
+			t.Fatalf("status = %d", rec.Code)
+		}
+		body := rec.Body.String()
+		if !strings.Contains(body, "Такой логин уже занят") || !strings.Contains(body, `value="Sasha"`) {
+			t.Error("form must show the error and keep the login")
+		}
+		// пароль обратно в разметку не попадает
+		if strings.Contains(body, "secret-pw") {
+			t.Error("password leaked into the page")
+		}
+		if len(rec.Result().Cookies()) != 0 {
+			t.Error("failed registration must not log in")
+		}
+	})
+}
+
+func TestRegisterPage(t *testing.T) {
+	t.Parallel()
+
+	uc := mockUsecase(t)
+	expectSession(uc)
+	wb := newTestDelivery(t, uc)
+
+	// на входе есть кнопка регистрации
+	rec := do(t, wb, http.MethodGet, "/login", nil, false)
+	if !strings.Contains(rec.Body.String(), `<a class="btn btn-secondary" href="/register">Зарегистрироваться</a>`) {
+		t.Error("login page has no register button")
+	}
+
+	rec = do(t, wb, http.MethodGet, "/register", nil, false)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `action="/register"`) {
+		t.Errorf("register page: status = %d", rec.Code)
+	}
+
+	// уже вошедшему регистрация не нужна
+	rec = do(t, wb, http.MethodGet, "/register", nil, true)
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/" {
+		t.Errorf("logged in: status = %d, Location = %q", rec.Code, rec.Header().Get("Location"))
+	}
+}
+
 func TestLogout(t *testing.T) {
 	t.Parallel()
 
@@ -246,6 +323,8 @@ func TestCardsPage(t *testing.T) {
 		"2775 0123 4567 8",
 		// масть рисунком из спрайта, а не символом
 		`href="#suit-`,
+		// индексы с обеих сторон карты
+		`<span class="pip pip-end" aria-hidden="true"><span class="pip-letter">П</span>`,
 		// адреса для офлайн-кэша: страница карты и картинка кода с версией
 		`data-offline="/cards/1 /cards/1/qr.png?v=`,
 	} {
@@ -258,6 +337,15 @@ func TestCardsPage(t *testing.T) {
 	}
 	if got := rec.Header().Get("Content-Security-Policy"); !strings.Contains(got, "default-src 'self'") {
 		t.Errorf("Content-Security-Policy = %q", got)
+	}
+	// выход - в колонтитуле, а не внизу под колодой
+	if !strings.Contains(body, `<form method="post" action="/logout">
+    <button class="bar-action" type="submit" data-online-only>Выйти</button>`) {
+		t.Error("cards page has no logout button in the header")
+	}
+	// добавление без сети тоже недоступно: формы нет в офлайн-кэше
+	if !strings.Contains(body, `href="/cards/new" data-online-only>Добавить карту</a>`) {
+		t.Error("add button is not marked as online only")
 	}
 	// список карт персональный: после выхода в кэше браузера его не остаётся
 	if cc := rec.Header().Get("Cache-Control"); cc != "no-store" {
@@ -439,9 +527,10 @@ func TestCardButtons(t *testing.T) {
 
 	// на странице карты: «Изменить» над «Удалить»
 	body := do(t, wb, http.MethodGet, "/cards/3", nil, true).Body.String()
-	edit := strings.Index(body, `<a class="btn btn-secondary" href="/cards/3/edit">Изменить карту</a>`)
+	// без сети обе кнопки недоступны (data-online-only): правки и удаления в офлайн-кэше нет
+	edit := strings.Index(body, `<a class="btn btn-secondary" href="/cards/3/edit" data-online-only>Изменить карту</a>`)
 	del := strings.Index(body,
-		`<a class="btn btn-danger" href="/cards/3/delete" data-dialog="delete-dialog">Удалить карту</a>`)
+		`<a class="btn btn-danger" href="/cards/3/delete" data-dialog="delete-dialog" data-online-only>Удалить карту</a>`)
 	if edit < 0 || del < 0 || edit > del {
 		t.Errorf("card page: edit button at %d, delete button at %d, want edit above delete", edit, del)
 	}
@@ -449,7 +538,8 @@ func TestCardButtons(t *testing.T) {
 	for _, want := range []string{
 		`<dialog class="modal" id="delete-dialog"`,
 		`Удалить «Пятёрочка»?`,
-		`<form method="post" action="/cards/3/delete">`,
+		`<form method="post" action="/cards/3/delete">
+        <button class="btn btn-danger" type="submit" data-online-only>Удалить</button>`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("card page has no %s", want)
@@ -617,58 +707,6 @@ func TestCardCode(t *testing.T) {
 	} {
 		if got := cardCode(content); got != want {
 			t.Errorf("cardCode(%q) = %q, want %q", content, got, want)
-		}
-	}
-}
-
-func TestUsedLabel(t *testing.T) {
-	t.Parallel()
-
-	// 24 октября, 12:00 по Москве
-	now := time.Date(2026, time.October, 24, 9, 0, 0, 0, time.UTC)
-	utc := func(day, hour, minute int) time.Time {
-		return time.Date(2026, time.October, day, hour, minute, 0, 0, time.UTC)
-	}
-	created := now.Add(-30 * 24 * time.Hour)
-
-	tests := []struct {
-		name     string
-		used     time.Time
-		want     string
-		wantText string
-	}{
-		{name: "never shown", used: created, want: "новая", wantText: "ещё не показывали"},
-		{name: "today", used: now.Add(-3 * time.Hour), want: "09:00", wantText: "сегодня в 09:00"},
-		// 23:30 по Москве 23 октября - вчера, хотя по UTC это ещё 20:30 того же дня
-		{name: "yesterday", used: utc(23, 20, 30), want: "вчера", wantText: "вчера в 23:30"},
-		// 00:10 по Москве 24 октября - уже сегодня, хотя по UTC это ещё 23 октября
-		{name: "after moscow midnight", used: utc(23, 21, 10), want: "00:10", wantText: "сегодня в 00:10"},
-		{name: "long ago", used: utc(9, 9, 0), want: "09.10", wantText: "09.10 в 12:00"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			card := model.Cards{CreatedAt: created, LastUsedAt: tt.used}
-			if got := usedLabel(card, now); got != tt.want {
-				t.Errorf("usedLabel = %q, want %q", got, tt.want)
-			}
-			if got := usedText(card, now); got != tt.wantText {
-				t.Errorf("usedText = %q, want %q", got, tt.wantText)
-			}
-		})
-	}
-}
-
-func TestCardsCount(t *testing.T) {
-	t.Parallel()
-
-	for n, want := range map[int]string{
-		1: "1 карта", 2: "2 карты", 4: "4 карты", 5: "5 карт", 11: "11 карт", 12: "12 карт",
-		21: "21 карта", 22: "22 карты", 25: "25 карт", 111: "111 карт", 101: "101 карта",
-	} {
-		if got := cardsCount(n); got != want {
-			t.Errorf("cardsCount(%d) = %q, want %q", n, got, want)
 		}
 	}
 }

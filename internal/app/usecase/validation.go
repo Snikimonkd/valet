@@ -18,9 +18,12 @@ var (
 
 // Поля входных структур, у которых бывают нарушения: ключи ValidationError
 const (
-	FieldName    = "Name"
-	FieldContent = "Content"
-	FieldNote    = "Note"
+	FieldName            = "Name"
+	FieldContent         = "Content"
+	FieldNote            = "Note"
+	FieldLogin           = "Login"
+	FieldPassword        = "Password"
+	FieldPasswordConfirm = "PasswordConfirm"
 )
 
 // ValidationError - нарушения правил по полям: имя поля входной структуры → нарушенное правило.

@@ -24,8 +24,9 @@
 {{/* внизу, подальше от кода. Удаление - только с подтверждением: случайное нажатие на кассе ничего не сотрёт.
      app.js открывает подтверждение окном поверх этого экрана, без js ссылка ведёт на отдельную страницу */}}
 <div class="dock dock-stack">
-  <a class="btn btn-secondary" href="/cards/{{.ID}}/edit">Изменить карту</a>
-  <a class="btn btn-danger" href="/cards/{{.ID}}/delete" data-dialog="delete-dialog">Удалить карту</a>
+  {{/* data-online-only: без сети app.js делает кнопки недоступными, правки и удаления в офлайн-кэше нет */}}
+  <a class="btn btn-secondary" href="/cards/{{.ID}}/edit" data-online-only>Изменить карту</a>
+  <a class="btn btn-danger" href="/cards/{{.ID}}/delete" data-dialog="delete-dialog" data-online-only>Удалить карту</a>
 </div>
 <dialog class="modal" id="delete-dialog" aria-labelledby="delete-dialog-title">
   <div class="modal-body">
@@ -37,7 +38,7 @@
         <button class="btn btn-secondary" type="submit" autofocus>Оставить</button>
       </form>
       <form method="post" action="/cards/{{.ID}}/delete">
-        <button class="btn btn-danger" type="submit">Удалить</button>
+        <button class="btn btn-danger" type="submit" data-online-only>Удалить</button>
       </form>
     </div>
   </div>

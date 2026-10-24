@@ -45,20 +45,57 @@ function keepScreenOn() {
   });
 }
 
-// checkConnection - страница могла прийти из офлайн-кэша. Сервер подскажет, почему:
-// нет сети - баннер «только просмотр», сессия истекла - баннер со ссылкой на вход
-async function checkConnection() {
+// setOnline - что показать с сетью и без неё. Без сети - баннер «только просмотр», а кнопки с data-online-only
+// (правка, удаление, добавление, выход) серые и не нажимаются: их страниц нет в офлайн-кэше.
+// Вернулась сеть - всё снова доступно
+function setOnline(online) {
   const banner = document.querySelector("[data-offline-banner]");
+  if (banner) banner.hidden = online;
+
+  for (const el of document.querySelectorAll("[data-online-only]")) {
+    if (online) {
+      el.removeAttribute("aria-disabled");
+    } else {
+      el.setAttribute("aria-disabled", "true");
+    }
+    if (el instanceof HTMLButtonElement) el.disabled = !online;
+  }
+}
+
+// выключенную ссылку браузер всё равно откроет, а data-dialog откроет окно: нажатие гасим раньше всех,
+// ещё на пути к кнопке (capture), чтобы до её собственных обработчиков оно не дошло
+document.addEventListener(
+  "click",
+  (event) => {
+    if (event.target.closest?.('[data-online-only][aria-disabled="true"]')) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  },
+  true,
+);
+
+// checkConnection - есть ли сеть и жива ли сессия. navigator.onLine врёт, когда Wi-Fi подключён, а интернета нет,
+// поэтому спрашиваем сервер. Страница могла прийти из офлайн-кэша, и он подскажет, почему:
+// нет сети - setOnline(false), сессия истекла - баннер со ссылкой на вход
+async function checkConnection() {
   const relogin = document.querySelector("[data-relogin-banner]");
-  if (!banner && !relogin) return;
+  const needed = relogin || document.querySelector("[data-offline-banner], [data-online-only]");
+  if (!needed) return;
+
+  // без сети точно: выключаем сразу, не дожидаясь ответа
+  if (!navigator.onLine) {
+    setOnline(false);
+    return;
+  }
 
   try {
     const res = await fetch("/ping", { cache: "no-store" });
+    setOnline(true);
     const loggedOut = res.redirected && new URL(res.url).pathname === "/login";
-    if (banner) banner.hidden = true;
     if (relogin) relogin.hidden = !loggedOut;
   } catch {
-    if (banner) banner.hidden = false;
+    setOnline(false);
   }
 }
 

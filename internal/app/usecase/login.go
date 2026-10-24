@@ -28,10 +28,10 @@ type LoginRepository interface {
 	DeleteExpiredSessions(ctx context.Context, userID uuid.UUID, now time.Time) error
 }
 
-// Login - проверяет логин и пароль и открывает сессию.
+// Login - проверяет логин и пароль и открывает сессию. Логин без учёта регистра, см. normalizeLogin.
 // ErrWrongPassword, если такого логина нет или пароль неверный
 func (u usecase) Login(ctx context.Context, login, password string) (Session, error) {
-	user, err := u.repository.GetUserByLogin(ctx, login)
+	user, err := u.repository.GetUserByLogin(ctx, normalizeLogin(login))
 	if errors.Is(err, ErrNotFound) {
 		return Session{}, ErrWrongPassword
 	}
@@ -44,9 +44,14 @@ func (u usecase) Login(ctx context.Context, login, password string) (Session, er
 		return Session{}, ErrWrongPassword
 	}
 
+	return u.openSession(ctx, user.ID)
+}
+
+// openSession - новая сессия пользователя: после входа и после регистрации
+func (u usecase) openSession(ctx context.Context, userID uuid.UUID) (Session, error) {
 	now := u.clock.Now()
 	// сессии копятся с каждого телефона и браузера: при входе убираем протухшие, чтобы таблица не росла вечно
-	err = u.repository.DeleteExpiredSessions(ctx, user.ID, now)
+	err := u.repository.DeleteExpiredSessions(ctx, userID, now)
 	if err != nil {
 		return Session{}, err
 	}
@@ -54,7 +59,7 @@ func (u usecase) Login(ctx context.Context, login, password string) (Session, er
 	session := Session{
 		// 128 случайных бит: токен не подобрать
 		Token:     rand.Text(),
-		UserID:    user.ID,
+		UserID:    userID,
 		ExpiresAt: now.Add(sessionTTL),
 	}
 	err = u.repository.CreateSession(ctx, model.Sessions{

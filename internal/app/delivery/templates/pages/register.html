@@ -1,0 +1,41 @@
+{{define "content"}}
+{{with .Page}}
+{{template "rubashka"}}
+<main class="page">
+  <div class="title-page title-page-compact">
+    {{template "logo"}}
+    <h1 class="wordmark">Регистрация</h1>
+    <p class="tagline">Все скидочные карты в одной колоде</p>
+  </div>
+  <form class="login-form" method="post" action="/register">
+    <div class="field">
+      <label class="field-label" for="f-login">Логин</label>
+      <input class="field-input" id="f-login" name="login" value="{{.Login}}" autocomplete="username"
+        autocapitalize="none" spellcheck="false" required minlength="3" maxlength="32" aria-describedby="f-login-msg"
+        {{- if .Errors.Login}} aria-invalid="true"{{end}}>
+      {{with .Errors.Login}}<p class="field-error" id="f-login-msg">{{.}}</p>
+      {{- else}}<p class="field-hint" id="f-login-msg">Буквы, цифры, точка, дефис и подчёркивание</p>{{end}}
+    </div>
+    <div class="field">
+      <label class="field-label" for="f-password">Пароль</label>
+      <input class="field-input" id="f-password" name="password" type="password" autocomplete="new-password"
+        required minlength="8" aria-describedby="f-password-msg"
+        {{- if .Errors.Password}} aria-invalid="true"{{end}}>
+      {{with .Errors.Password}}<p class="field-error" id="f-password-msg">{{.}}</p>
+      {{- else}}<p class="field-hint" id="f-password-msg">Не короче 8 символов</p>{{end}}
+    </div>
+    <div class="field">
+      <label class="field-label" for="f-password-confirm">Пароль ещё раз</label>
+      <input class="field-input" id="f-password-confirm" name="password_confirm" type="password" autocomplete="new-password"
+        required
+        {{- with .Errors.PasswordConfirm}} aria-invalid="true" aria-describedby="f-password-confirm-msg"{{end}}>
+      {{with .Errors.PasswordConfirm}}<p class="field-error" id="f-password-confirm-msg">{{.}}</p>{{end}}
+    </div>
+    <div class="form-actions form-actions-stack">
+      <button class="btn btn-primary" type="submit">Зарегистрироваться</button>
+      <a class="btn btn-secondary" href="/login">У меня уже есть аккаунт</a>
+    </div>
+  </form>
+</main>
+{{end}}
+{{end}}

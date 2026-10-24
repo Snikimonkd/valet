@@ -20,15 +20,22 @@ import (
 const (
 	// codeUniqueViolation - код ошибки postgres «нарушен уникальный индекс»
 	codeUniqueViolation = "23505"
-	// cardsContentUniqueIdx - у карт пользователя содержимое не повторяется, см. migrations/*_cards_unique_content.sql
+	// cardsContentUniqueIdx - у карт пользователя содержимое не повторяется, см. migrations/*_init.sql
 	cardsContentUniqueIdx = "cards_user_id_content_unique_idx"
+	// usersLoginUniqueIdx - логины не повторяются, см. migrations/*_init.sql
+	usersLoginUniqueIdx = "users_login_unique_idx"
 )
+
+// isUniqueViolation - база отказалась сохранить строку: она нарушила бы уникальный индекс index
+func isUniqueViolation(err error, index string) bool {
+	pgErr, ok := errors.AsType[*pgconn.PgError](err)
+
+	return ok && pgErr.Code == codeUniqueViolation && pgErr.ConstraintName == index
+}
 
 // isCardDuplicate - база отказалась сохранить карту: у пользователя уже есть карта с таким содержимым
 func isCardDuplicate(err error) bool {
-	pgErr, ok := errors.AsType[*pgconn.PgError](err)
-
-	return ok && pgErr.Code == codeUniqueViolation && pgErr.ConstraintName == cardsContentUniqueIdx
+	return isUniqueViolation(err, cardsContentUniqueIdx)
 }
 
 type repository struct {
@@ -63,6 +70,26 @@ func (r repository) GetUserByLogin(ctx context.Context, login string) (model.Use
 	}
 
 	return res, nil
+}
+
+// CreateUser - сохраняет пользователя. usecase.ErrLoginTaken, если логин уже занят
+func (r repository) CreateUser(ctx context.Context, user model.Users) error {
+	stmt := table.Users.INSERT(
+		table.Users.AllColumns,
+	).MODEL(
+		user,
+	)
+
+	query, args := stmt.Sql()
+	_, err := r.db.Exec(ctx, query, args...)
+	if isUniqueViolation(err, usersLoginUniqueIdx) {
+		return usecase.ErrLoginTaken
+	}
+	if err != nil {
+		return fmt.Errorf("can't insert into users: %w", err)
+	}
+
+	return nil
 }
 
 // CreateSession - сохраняет сессию

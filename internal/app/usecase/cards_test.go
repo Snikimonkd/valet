@@ -190,12 +190,17 @@ func TestScanQR(t *testing.T) {
 		data    []byte
 		want    string
 		wantErr error
+		// wantCause - причина, которая должна остаться в ошибке для логов
+		wantCause string
 	}{
 		{name: "qr", data: code, want: "2775012345678"},
-		{name: "no qr", data: blankPNG(t), wantErr: usecase.ErrQRNotFound},
-		{name: "not an image", data: []byte("hello"), wantErr: usecase.ErrBadImage},
+		{name: "no qr", data: blankPNG(t), wantErr: usecase.ErrQRNotFound, wantCause: "NotFoundException"},
+		{name: "not an image", data: []byte("hello"), wantErr: usecase.ErrBadImage, wantCause: "unknown format"},
 		// заголовок PNG обещает 100 000 × 100 000 точек: распаковывать такое нельзя
-		{name: "too many pixels", data: pngHeader(100_000, 100_000), wantErr: usecase.ErrBadImage},
+		{
+			name: "too many pixels", data: pngHeader(100_000, 100_000),
+			wantErr: usecase.ErrBadImage, wantCause: "100000x100000",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -206,6 +211,9 @@ func TestScanQR(t *testing.T) {
 			got, err := u.ScanQR(t.Context(), bytes.NewReader(tt.data))
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("err = %v, want %v", err, tt.wantErr)
+			}
+			if err != nil && !strings.Contains(err.Error(), tt.wantCause) {
+				t.Errorf("err = %q, want cause %q in it", err, tt.wantCause)
 			}
 			if got != tt.want {
 				t.Errorf("ScanQR = %q, want %q", got, tt.want)

@@ -17,8 +17,9 @@ import (
 )
 
 var (
-	// ErrQRNotFound - на картинке нет QR-кода, который удалось прочитать
-	ErrQRNotFound = errors.New("qr code not found")
+	// ErrQRNotFound - на картинке нет QR-кода, который удалось прочитать. Это та же ошибка, что отдаёт qr.Decode,
+	// поэтому её не надо оборачивать: причина от gozxing уже внутри
+	ErrQRNotFound = qr.ErrNotFound
 	// ErrBadImage - файл не картинка или формат не поддерживается
 	ErrBadImage = errors.New("bad image")
 )
@@ -28,7 +29,8 @@ var (
 const maxImagePixels = 50_000_000
 
 // ScanQR - текст QR-кода с фото или скриншота. Картинка нигде не сохраняется.
-// ErrBadImage, если это не JPEG, PNG или GIF, ErrQRNotFound, если кода на ней не нашлось
+// ErrBadImage, если это не JPEG, PNG или GIF, ErrQRNotFound, если кода на ней не нашлось.
+// Обе ошибки несут причину: что именно не так с файлом, она нужна в логах
 func (u usecase) ScanQR(_ context.Context, r io.Reader) (string, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
@@ -38,24 +40,16 @@ func (u usecase) ScanQR(_ context.Context, r io.Reader) (string, error) {
 	// размеры есть в заголовке файла: проверяем их до того, как выделять память под все точки
 	cfg, _, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
-		return "", ErrBadImage
+		return "", fmt.Errorf("%w: can't read image header: %w", ErrBadImage, err)
 	}
 	if cfg.Width*cfg.Height > maxImagePixels {
-		return "", ErrBadImage
+		return "", fmt.Errorf("%w: %dx%d is more than %d pixels", ErrBadImage, cfg.Width, cfg.Height, maxImagePixels)
 	}
 
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		return "", ErrBadImage
+		return "", fmt.Errorf("%w: can't decode image: %w", ErrBadImage, err)
 	}
 
-	text, err := qr.Decode(img)
-	if errors.Is(err, qr.ErrNotFound) {
-		return "", ErrQRNotFound
-	}
-	if err != nil {
-		return "", err
-	}
-
-	return text, nil
+	return qr.Decode(img)
 }

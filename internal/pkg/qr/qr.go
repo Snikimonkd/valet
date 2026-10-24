@@ -25,7 +25,7 @@ const quietZone = 4
 
 // Decode - текст первого QR-кода на картинке. Сначала читает как есть, потом в инверсии:
 // светлый код на тёмном фоне (тёмная тема в приложении магазина) без инверсии не находится.
-// ErrNotFound, если кода нет или его не прочитать
+// ErrNotFound, если кода нет или его не прочитать: внутри - что ответил gozxing на последней попытке
 func Decode(img image.Image) (string, error) {
 	src := gozxing.NewLuminanceSourceFromImage(img)
 
@@ -47,8 +47,9 @@ func decode(src gozxing.LuminanceSource) (string, error) {
 	hints := map[gozxing.DecodeHintType]any{gozxing.DecodeHintType_TRY_HARDER: true}
 	res, err := qrcode.NewQRCodeReader().Decode(bmp, hints)
 	if err != nil {
-		// любая ошибка чтения значит одно: код не прочитан. Подробности gozxing наружу не нужны
-		return "", ErrNotFound
+		// любая ошибка чтения значит одно: код не прочитан. Что именно не так (кода нет,
+		// не сошлась контрольная сумма, не тот формат), остаётся внутри - для логов
+		return "", fmt.Errorf("%w: %w", ErrNotFound, err)
 	}
 
 	return res.GetText(), nil

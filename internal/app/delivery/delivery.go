@@ -32,8 +32,9 @@ type Usecase interface {
 	CardsUsecase
 }
 
-// SessionUsecase - вход, проверка сессии и выход
+// SessionUsecase - регистрация, вход, проверка сессии и выход
 type SessionUsecase interface {
+	Register(ctx context.Context, in usecase.RegisterInput) (usecase.Session, error)
 	Login(ctx context.Context, login, password string) (usecase.Session, error)
 	Authenticate(ctx context.Context, token string) (usecase.Session, error)
 	Logout(ctx context.Context, token string) error
@@ -105,6 +106,8 @@ func (wb *delivery) routes(static fs.FS) http.Handler {
 
 	r.Get("/login", wb.loginPage)
 	r.Post("/login", wb.login)
+	r.Get("/register", wb.registerPage)
+	r.Post("/register", wb.register)
 	r.Post("/logout", wb.logout)
 
 	r.Group(func(r chi.Router) {
