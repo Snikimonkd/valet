@@ -381,6 +381,19 @@ textarea.field-input {
   box-shadow: inset 0 0 0 1px var(--red);
 }
 
+/* Автозаполнение: браузер красит поле в свой цвет (Chrome - в голубой) с чёрным текстом. Фон у него
+   !important и не перебивается, поэтому поверх фона ложится сплошная внутренняя тень цвета поля,
+   а поверх цвета текста - -webkit-text-fill-color */
+.field-input:-webkit-autofill {
+  -webkit-text-fill-color: var(--ink);
+  caret-color: var(--ink);
+  box-shadow: inset 0 0 0 1000px var(--stock);
+}
+
+.field-input[aria-invalid="true"]:-webkit-autofill {
+  box-shadow: inset 0 0 0 1px var(--red), inset 0 0 0 1000px var(--stock);
+}
+
 .field-hint {
   color: var(--ink-2);
   font-size: var(--fs-small);
@@ -605,7 +618,7 @@ textarea.field-input {
   text-wrap: balance;
 }
 
-/* --- Показ карты: светлый в любой теме, без оформления вокруг кода ------- */
+/* --- Показ карты: без оформления вокруг кода ----------------------------- */
 
 .qr-main {
   flex: 1;
@@ -1065,28 +1078,9 @@ button.bar-action {
   pointer-events: none;
 }
 
-/* Экран кассы: бумага светлой темы в любой теме - цвета системной полосы под ним, которую в установленном PWA
-   на Android красит theme_color из манифеста. Сам код - чёрный на белом: у картинки своя белая рамка
-   в 4 модуля (qr.quietZone), по ней сканер и находит код, фон вокруг ему не мешает */
-[data-page="card"] {
-  background: #F3EDDF;
-}
-
-[data-page="card"] .screen {
-  --ink: #1D2B45;
-  --ink-2: #55617A;
-  --red: #7B2333;
-  --red-wash: #F1E2DC;
-  --on-red: #FBF8F1;
-  --rule: #D6CFBF;
-  --paper: #F3EDDF;
-  --stock: #FBF8F1;
-  color-scheme: light;
-  background: var(--paper);
-  color: var(--ink);
-}
-
-/* Экран кассы ровно по высоте окна: кнопки внизу видны всегда. Не влезло (маленький телефон,
+/* Экран кассы в цветах темы, как остальные. Сам код - чёрный на белом: у картинки своя белая рамка
+   в 4 модуля (qr.quietZone), по ней сканер и находит код, тёмный фон вокруг ему не мешает.
+   Экран кассы ровно по высоте окна: кнопки внизу видны всегда. Не влезло (маленький телефон,
    длинная заметка) - прокручивается только середина, а не вся страница */
 [data-page="card"] .screen {
   height: 100%;

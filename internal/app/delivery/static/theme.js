@@ -28,7 +28,6 @@
   const apply = () => {
     const theme = current();
     root.dataset.theme = theme;
-    // у экрана кассы полоса своя, светлая в любой теме: её meta без data-theme-color
     for (const meta of document.querySelectorAll("meta[data-theme-color]")) {
       meta.content = barColors[theme];
     }

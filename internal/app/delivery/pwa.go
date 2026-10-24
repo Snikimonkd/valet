@@ -11,7 +11,9 @@ func (wb *delivery) serviceWorker(static fs.FS) http.HandlerFunc {
 	return wb.rootFile(static, "sw.js", "text/javascript; charset=utf-8")
 }
 
-// manifest - описание PWA: имя, иконки и цвета для установки на главный экран
+// manifest - описание PWA: имя, иконки и цвета для установки на главный экран.
+// theme_color чёрный: им установленное PWA на Android красит полосу жестов внизу экрана, страница
+// на неё не влияет. Полосу браузера сверху красит meta theme-color страницы, см. theme.js
 func (wb *delivery) manifest(static fs.FS) http.HandlerFunc {
 	return wb.rootFile(static, "manifest.webmanifest", "application/manifest+json")
 }

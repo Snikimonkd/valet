@@ -4,13 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  {{- if eq .Name "card"}}
-  {{/* экран кассы светлый в любой теме, полоса браузера над ним того же цвета */}}
-  <meta name="theme-color" content="#F3EDDF">
-  {{- else}}
   {{/* цвет полосы браузера под тему ставит theme.js */}}
   <meta name="theme-color" content="#F3EDDF" data-theme-color>
-  {{- end}}
   <title>{{.Title}} — valet</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="{{asset "logo.svg"}}" type="image/svg+xml">
