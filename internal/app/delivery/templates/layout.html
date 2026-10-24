@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
   {{- if eq .Name "card"}}
-  {{/* экран кассы белый в любой теме, полоса браузера над ним тоже */}}
-  <meta name="theme-color" content="#FFFFFF">
+  {{/* экран кассы светлый в любой теме, полоса браузера над ним того же цвета */}}
+  <meta name="theme-color" content="#F3EDDF">
   {{- else}}
   <meta name="theme-color" content="#F3EDDF" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#141C2E" media="(prefers-color-scheme: dark)">

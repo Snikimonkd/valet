@@ -606,14 +606,7 @@ textarea.field-input {
   text-wrap: balance;
 }
 
-/* --- Показ карты: всегда белый, без оформления вокруг кода --------------- */
-
-.qr-screen {
-  --ink: #1D2B45;
-  --ink-2: #55617A;
-  background: #FFFFFF;
-  color: var(--ink);
-}
+/* --- Показ карты: светлый в любой теме, без оформления вокруг кода ------- */
 
 .qr-main {
   flex: 1;
@@ -989,9 +982,11 @@ button.bar-action {
   pointer-events: none;
 }
 
-/* Экран кассы: белый в любой теме, синька только для подписей. Сам код - чёрный на белом */
+/* Экран кассы: бумага светлой темы в любой теме - цвета системной полосы под ним, которую в установленном PWA
+   на Android красит theme_color из манифеста. Сам код - чёрный на белом: у картинки своя белая рамка
+   в 4 модуля (qr.quietZone), по ней сканер и находит код, фон вокруг ему не мешает */
 [data-page="card"] {
-  background: #FFFFFF;
+  background: #F3EDDF;
 }
 
 [data-page="card"] .screen {
@@ -1001,9 +996,10 @@ button.bar-action {
   --red-wash: #F1E2DC;
   --on-red: #FBF8F1;
   --rule: #D6CFBF;
-  --paper: #FFFFFF;
+  --paper: #F3EDDF;
+  --stock: #FBF8F1;
   color-scheme: light;
-  background: #FFFFFF;
+  background: var(--paper);
   color: var(--ink);
 }
 
