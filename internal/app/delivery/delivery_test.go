@@ -335,13 +335,22 @@ func TestCardsPage(t *testing.T) {
 	if strings.Contains(body, "<script>Лента") {
 		t.Error("card name is not escaped")
 	}
+	// тема ставится до первой отрисовки: theme.js в <head> без defer и раньше стилей
+	themeJS := strings.Index(body, `<script src="/static/theme.js?v=`)
+	if themeJS < 0 || themeJS > strings.Index(body, `/static/app.css?v=`) {
+		t.Error("theme.js must be loaded in head before app.css")
+	}
 	if got := rec.Header().Get("Content-Security-Policy"); !strings.Contains(got, "default-src 'self'") {
 		t.Errorf("Content-Security-Policy = %q", got)
 	}
 	// выход - в колонтитуле, а не внизу под колодой
-	if !strings.Contains(body, `<form method="post" action="/logout">
-    <button class="bar-action" type="submit" data-online-only>Выйти</button>`) {
+	if !strings.Contains(body, `<button class="bar-action" type="submit" data-online-only>Выйти</button>`) {
 		t.Error("cards page has no logout button in the header")
+	}
+	// тумблер темы - там же, в колонтитуле, перед «Выйти»
+	toggle := strings.Index(body, `role="switch" aria-checked="false" aria-label="Тёмная тема" data-theme-toggle`)
+	if toggle < 0 || toggle > strings.Index(body, `action="/logout"`) {
+		t.Error("cards page has no theme toggle before logout")
 	}
 	// добавление без сети тоже недоступно: формы нет в офлайн-кэше
 	if !strings.Contains(body, `href="/cards/new" data-online-only>Добавить карту</a>`) {

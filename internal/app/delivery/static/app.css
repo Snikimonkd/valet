@@ -72,27 +72,26 @@
   --shadow-sheet: 0 -12px 32px -12px rgba(29, 43, 69, 0.35);
 }
 
-/* Тёмная тема: выворотка, светлая краска по синему картону */
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --paper: #141C2E;
-    --stock: #1B2539;
-    --ink: #EEE7D7;
-    --ink-2: #A3AABA;
-    --red: #D48A95;
-    --red-wash: #2A2033;
-    --rule: #2E3850;
-    --line: #6E7891;
-    --card-line: rgba(238, 231, 215, 0.14);
-    --on-ink: #141C2E;
-    --on-ink-2: rgba(20, 28, 46, 0.75);
-    --on-red: #141C2E;
-    --scrim: rgba(5, 8, 15, 0.6);
-    --shadow-card: 0 -3px 10px -4px rgba(0, 0, 0, 0.6);
-    --shadow-lift: 0 -8px 18px -8px rgba(0, 0, 0, 0.7);
-    --shadow-sheet: 0 -12px 32px -12px rgba(0, 0, 0, 0.7);
-  }
+/* Тёмная тема: выворотка, светлая краска по синему картону. Включает её theme.js атрибутом data-theme
+   на <html> - по выбору пользователя или, пока выбора нет, по теме системы */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #141C2E;
+  --stock: #1B2539;
+  --ink: #EEE7D7;
+  --ink-2: #A3AABA;
+  --red: #D48A95;
+  --red-wash: #2A2033;
+  --rule: #2E3850;
+  --line: #6E7891;
+  --card-line: rgba(238, 231, 215, 0.14);
+  --on-ink: #141C2E;
+  --on-ink-2: rgba(20, 28, 46, 0.75);
+  --on-red: #141C2E;
+  --scrim: rgba(5, 8, 15, 0.6);
+  --shadow-card: 0 -3px 10px -4px rgba(0, 0, 0, 0.6);
+  --shadow-lift: 0 -8px 18px -8px rgba(0, 0, 0, 0.7);
+  --shadow-sheet: 0 -12px 32px -12px rgba(0, 0, 0, 0.7);
 }
 
 
@@ -919,10 +918,8 @@ a {
   --ornament: rgb(29 43 69 / 0.4);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ornament: rgb(238 231 215 / 0.2);
-  }
+:root[data-theme="dark"] {
+  --ornament: rgb(238 231 215 / 0.2);
 }
 
 .rubashka {
@@ -963,6 +960,73 @@ a {
   margin-top: var(--s-6);
   color: var(--ink-2);
   text-align: center;
+}
+
+/* Правый край колонтитула колоды: тумблер темы и «Выйти» */
+.bar-end {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+
+/* Тумблер темы: дорожка с бегунком. Солнце и луна по краям дорожки, бегунок закрывает
+   текущую тему и показывает, куда переключится. Без js тумблер не работает и не показывается */
+.theme-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root[data-theme] .theme-toggle {
+  display: inline-flex;
+}
+
+.theme-toggle-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 44px;
+  height: 24px;
+  padding: 0 5px;
+  border: 1.5px solid var(--ink);
+  border-radius: 12px;
+}
+
+.theme-toggle-track .icon {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2;
+}
+
+.theme-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: var(--ink);
+  transition: translate 0.15s ease-out;
+}
+
+.theme-toggle[aria-checked="true"] .theme-toggle-knob {
+  translate: 20px 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle-knob {
+    transition: none;
+  }
 }
 
 /* Кнопка в колонтитуле выглядит как ссылка рядом: «Выйти» справа от «Колоды» */

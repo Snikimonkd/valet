@@ -117,8 +117,23 @@ function confirmDialogs() {
   }
 }
 
+// themeToggle - тумблер темы в колонтитуле: включён - тёмная. Сама тема живёт в theme.js
+function themeToggle() {
+  const toggle = document.querySelector("[data-theme-toggle]");
+  if (!toggle || !window.valetTheme) return;
+
+  const sync = () => toggle.setAttribute("aria-checked", String(window.valetTheme.current() === "dark"));
+  sync();
+  // тема могла смениться и без тумблера: пользователь ещё не выбирал, а система переключилась
+  document.addEventListener("valet:theme", sync);
+  toggle.addEventListener("click", () => {
+    window.valetTheme.set(window.valetTheme.current() === "dark" ? "light" : "dark");
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   confirmDialogs();
+  themeToggle();
 
   const filter = document.querySelector("[data-filter]");
   if (filter) {

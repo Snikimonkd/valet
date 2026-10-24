@@ -8,13 +8,15 @@
   {{/* экран кассы светлый в любой теме, полоса браузера над ним того же цвета */}}
   <meta name="theme-color" content="#F3EDDF">
   {{- else}}
-  <meta name="theme-color" content="#F3EDDF" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#141C2E" media="(prefers-color-scheme: dark)">
+  {{/* цвет полосы браузера под тему ставит theme.js */}}
+  <meta name="theme-color" content="#F3EDDF" data-theme-color>
   {{- end}}
   <title>{{.Title}} — valet</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="{{asset "logo.svg"}}" type="image/svg+xml">
   <link rel="apple-touch-icon" href="{{asset "icon-192.png"}}">
+  {{/* без defer: тема должна встать до первой отрисовки, иначе экран мигнёт светлым */}}
+  <script src="{{asset "theme.js"}}"></script>
   <link rel="stylesheet" href="{{asset "fonts.css"}}">
   <link rel="stylesheet" href="{{asset "app.css"}}">
   <script src="{{asset "htmx.min.js"}}" defer></script>
