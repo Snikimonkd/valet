@@ -34,7 +34,8 @@
       <a class="deck-card" href="{{.URL}}" data-suit="{{.Suit}}">
         {{template "pip" .}}
         <span class="deck-card-name">{{.Name}}</span>
-        <span class="deck-card-code">{{.Code}}</span>
+        {{/* заметка, а не содержимое кода: «PIN 4417» в колоде полезнее, чем хэш из QR */}}
+        {{with .Note}}<span class="deck-card-note">{{.}}</span>{{end}}
         {{template "pip_end" .}}
       </a>
     </li>

@@ -31,11 +31,11 @@
         {{- with .Errors.PasswordConfirm}} aria-invalid="true" aria-describedby="f-password-confirm-msg"{{end}}>
       {{with .Errors.PasswordConfirm}}<p class="field-error" id="f-password-confirm-msg">{{.}}</p>{{end}}
     </div>
-    <div class="form-actions form-actions-stack">
+    <div class="form-actions">
       <button class="btn btn-primary" type="submit">Зарегистрироваться</button>
-      <a class="btn btn-secondary" href="/login">У меня уже есть аккаунт</a>
     </div>
   </form>
+  <p class="auth-switch">Уже есть аккаунт? <a href="/login">Войти</a></p>
 </main>
 {{end}}
 {{end}}
